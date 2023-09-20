@@ -1,2 +1,2 @@
-# ParalelProgamming
-Class of Paralel Programming
+# ParallelProgamming
+Class of Parallel Programming
