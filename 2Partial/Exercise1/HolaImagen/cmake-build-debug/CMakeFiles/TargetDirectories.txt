@@ -1,0 +1,3 @@
+C:/Users/odiaz/Portafolio/ParallelProgramming/GitRepo/2Partial/Exercise1/HolaImagen/cmake-build-debug/CMakeFiles/HolaImagen.dir
+C:/Users/odiaz/Portafolio/ParallelProgramming/GitRepo/2Partial/Exercise1/HolaImagen/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/odiaz/Portafolio/ParallelProgramming/GitRepo/2Partial/Exercise1/HolaImagen/cmake-build-debug/CMakeFiles/rebuild_cache.dir
