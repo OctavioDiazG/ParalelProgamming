@@ -1,0 +1,3 @@
+C:/Users/odiaz/Portafolio/ParallelProgramming/Test/cmake-build-debug/CMakeFiles/Test.dir
+C:/Users/odiaz/Portafolio/ParallelProgramming/Test/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/odiaz/Portafolio/ParallelProgramming/Test/cmake-build-debug/CMakeFiles/rebuild_cache.dir
