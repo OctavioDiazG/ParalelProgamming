@@ -102,9 +102,13 @@ The first CUDA example in the document demonstrates the use of CUDA to evaluate 
 - Clock Frequency: The clock frequency determines the speed at which the CPU can execute instructions. Over the years, the clock frequency has increased, but it has reached a limit due to power requirements and heat generation.
 - Moore's Law: Moore's Law states that the number of transistors on a chip doubles approximately every two years, leading to increased computational power and performance.
 
+![CPU_Architecture](1.3_CPU__Architecture.png)
+
 ### 1.4 CPU Compute Power:
 
 The compute power of individual CPUs has significantly increased over the past 30 years, with a factor of more than 10^6. This growth has been driven by innovations in design rather than an increase in frequency. Multicore technology has been a major contributor to performance per chip since 2002. While GPUs are not included in this plot, recent Intel Xeon-phi designs with hundreds of cores are becoming more GPU-like. The power used by a single device has remained relatively stable since 2002. These advancements in compute power have transformed society and show no signs of slowing down.
+
+![Moore's Law for CPUs](Moores_Law.png)
 
 ### 1.5 CPU Memory Management: Latency Hiding Using Caches:
 
@@ -118,6 +122,8 @@ In CPU memory management, latency hiding is achieved through the use of caches. 
 - Over the years, Intel CPUs have evolved to support more advanced vector instructions, such as AVX2 and AVX-512, with wider registers and support for various data types.
 - AVX-512, the most recent version, uses 512-byte registers capable of holding vectors of up to 16 floats or 8 doubles.
 - The use of AVX and other vector instructions on Intel CPUs is discussed in more detail in Appendix D.
+
+![CPU_Parallel_instruction_Set](1.6_CPU_Parallel_instruction_Set.png)
 
 ### 1.7 GPU Architecture:
 
@@ -141,6 +147,8 @@ The Pascal architecture is used in NVIDIA GPUs and is built up in a hierarchical
 - Register File: Each SM has 64K 32-bit registers which are shared equally by the thread blocks concurrently executing on the SM. This is a very important memory resource. If a thread uses more than 32 registers, the maximum number of thread blocks running on the SM (occupancy) is reduced, potentially harming performance. The NVCC compiler has a switch, --maxrregcount <number>, that can be used to tune overall performance by trading occupancy against thread computational performance.
 
 - Local Memory: Local memory is memory blocks private to each individual executing thread. They are used as overflow storage for local variables in intermediate temporary results when the registers available to a thread are insufficient. Local memory is cached via the L2 and L1 caches, just like other data.
+
+![GPU_Memory_Types](1.9_GPU_Memory_Types.png)
 
 ### 1.10 Warps and Waves:
 
@@ -254,6 +262,8 @@ To implement matrix multiplication efficiently in CUDA, shared memory can be use
 The CUDA SDK provides libraries like cuBLAS for performing matrix multiplication, which are highly optimized and offer better performance than custom kernel implementations. However, writing your own matrix multiplication kernels can be beneficial in situations where a custom solution is required or when dealing with smaller matrices.
 
 Overall, matrix multiplication is a common and important calculation in many scientific and computational applications, and understanding its implementation in CUDA can lead to significant performance improvements.
+
+![Matrix_Multiplication](2.8_Matrix_Multiplication.png)
 
 ### 2.9 Tiled Matrix Multiplication:
 
