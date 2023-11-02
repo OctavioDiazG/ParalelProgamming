@@ -1,0 +1,4 @@
+# ninja log v5
+0	3225	7198830388359581	CMakeFiles/TestCode.dir/main.cu.obj	1a83b2dcbfcf27a9
+3227	4588	7198830402048415	CMakeFiles/TestCode.dir/cmake_device_link.obj	574afebde7d15c36
+4588	4983	7198830405944693	TestCode.exe	5fea4b127f690efd
