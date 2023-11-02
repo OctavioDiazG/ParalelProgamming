@@ -1,97 +1,65 @@
-# Resume Of Programming In Parallel With CUDA Chptrs 1-2
+# Resume Of Professional CUDA C Programming Chptrs 3-4
 
-## Overview
-Chapters 1 and 2 provide an introduction to GPU kernels and hardware, focusing on the nature of hardware and its impact on parallel programming. The chapters discuss the background of GPU programming, the architecture of CPUs and GPUs, and the basics of parallel programming. They also cover topics such as Flynn's taxonomy, kernel call syntax, latency hiding, parallel patterns, shared memory, and matrix multiplication.
+## Overall Overview
+**Chapter 3:** focuses on the CUDA execution model and the common limiters to kernel performance, such as memory bandwidth, compute resources, and instruction and memory latency. It emphasizes the importance of understanding hardware resources to improve kernel performance.
 
-### Key points
-1. Chapter 1 introduces the concept of GPU programming and the CUDA programming model. It explains the background of GPU programming and the advantages of using GPUs for scientific and technical computing tasks. Also provides an overview of CPU architecture, including CPU compute power, memory management, parallel instruction set, and GPU architecture, including Pascal architecture and GPU memory types.
+**Chapter 4:** delves into the topic of global memory in CUDA programming. It explains the CUDA memory model and explores different global memory access patterns. The chapter also covers memory management, memory allocation and deallocation, memory transfer, and performance tuning techniques related to global memory.
 
-2. Chapter 2 focuses on thinking and coding in parallel. It discusses Flynn's taxonomy, which categorizes serial and parallel computer architectures. It explains kernel call syntax, 3D kernel launches, latency hiding, parallel patterns, shared memory, matrix multiplication, tiled matrix multiplication, and BLAS (Basic Linear Algebra Subprograms).
+## Overall Key points
+### Chapter 3:
+- The CUDA execution model has three common limiters to kernel performance: memory bandwidth, compute resources, and instruction and memory latency.
+- Understanding hardware resources is crucial for optimizing kernel performance.
+- Knowledge of the GPU architecture enables better code writing and utilization of device capabilities.
 
-3. The chapters emphasize the importance of understanding the capabilities of the underlying hardware when writing effective programs for GPUs or CPUs. They highlight the need for true parallel programming, where multiple processing cores work together to complete a single task.
+### Chapter 4:
+- The CUDA memory model unifies host and device memory systems and allows explicit control over data placement for optimal performance.
+- Applications often exhibit temporal and spatial locality, which can be leveraged for efficient memory access.
+- The chapter covers various global memory access patterns, including aligned and coalesced access, and discusses performance tuning techniques for maximizing memory bandwidth.
 
-4. The chapters also mention the limitations of trivial parallel programming approaches on GPUs, which require specialized processing cores designed to work together on a single task.
+## Chapter 3: Kuda Execution Model
+3.1 Introducing the CUDA Execution Model <br>
+The CUDA execution model provides an operational view of how instructions are executed on a specific computing architecture. It exposes an abstract view of the GPU parallel architecture, allowing developers to reason about thread concurrency. The execution model consists of two primary abstractions: a memory hierarchy and a thread hierarchy. The memory hierarchy allows for efficient memory accesses, while the thread hierarchy enables control over the massively parallel GPU.
 
-5. Overall, the chapters provide a foundation for understanding the nature of hardware and its impact on parallel programming, setting the stage for further exploration of GPU programming techniques.
+3.2 Understanding The Nature of Warp Execution <br>
+In this section, the document explains the concept of warp execution in detail. It starts by introducing the idea of warps, which are groups of 32 threads that are executed together on a single execution unit called a Streaming Multiprocessor (SM). The document emphasizes that while threads within a warp are logically executed in parallel, not all threads can physically execute in parallel at the same time.
 
-## Chapter 1: Introduction to GPU Kernels and Hardware
-1.1 Background:
-This section provides an introduction to GPU kernels and hardware, highlighting the importance of understanding the underlying hardware when designing high-performance code.
+3.3 Exposing Parallelism <br>
+It explains that dynamic parallelism allows for the creation of new work directly from the GPU, enabling the expression of recursive or data-dependent parallel algorithms in a more natural and easy-to-understand way. The document also mentions that attention must be given to the child grid launch strategy, parent-child synchronization, and the depth of nested levels when implementing an efficient nested kernel. It highlights that the maximum number of kernel nestings will likely be limited due to the device runtime system reserving extra memory at each nesting level. The document emphasizes the importance of synchronization for both performance and correctness and suggests that reducing the number of in-block synchronizations can lead to more efficient nested kernels. It concludes by stating that dynamic parallelism offers the ability to adapt to data-driven decisions or workloads by making launch configuration decisions at runtime on the device.
 
-1.2 First CUDA Example:
-The chapter starts with a CUDA example, demonstrating how to write and execute a simple CUDA program.
+3.4 Avoid Branch Divergence <br>
+Branch divergence refers to the situation where threads within a warp take different code paths. When threads in a warp diverge, the warp serially executes each branch path, disabling threads that do not take that path. This can result in degraded performance as the amount of parallelism within the warp is reduced.
 
-1.3 CPU Architecture:
-This section gives a brief overview of the important features in conventional CPUs, including the master clock, memory, and cache hierarchy.
+3.5 Unrolling Loops <br>
+Loop unrolling is a technique used to improve the performance of loops in CUDA programming. It involves replicating the body of the loop multiple times, reducing the number of iterations and improving instruction throughput. Unrolling loops can be effective for sequential array processing loops where the number of iterations is known prior to execution.
 
-1.4 CPU Compute Power:
-The compute power of a CPU is directly proportional to the clock frequency. The chapter discusses the evolution of CPU clock frequencies over the years.
+3.6 Dynamic Paralellism <br>
+Dynamic Parallelism is a feature introduced in CUDA that allows the GPU to launch new grids dynamically. It enables the GPU to launch nested kernels, eliminating the need for communication with the CPU. With dynamic parallelism, any kernel can launch another kernel and manage any inter-kernel dependencies needed to perform additional work.
 
-1.5 CPU Memory Management: Latency Hiding Using Caches:
-This section explains how CPU memory management works, specifically focusing on latency hiding using caches.
+## Chapter 4: Global Memory
+4.1 Introducing the CUDA memory model <br>
+The CUDA memory model is a key aspect of programming with CUDA. It unifies the separate host and device memory systems and exposes the full memory hierarchy, allowing programmers to explicitly control data placement for optimal performance. The memory model provides a way to manage memory access and achieve optimal latency and bandwidth given the hardware memory subsystem.
 
-1.6 CPU: Parallel Instruction Set:
-The chapter explores the parallel instruction set of CPUs, highlighting their ability to execute multiple instructions simultaneously.
+4.2 Memory Management <br>
+The CUDA memory model provides a unified memory hierarchy that allows explicit control over data placement for optimal performance. Memory management plays a crucial role in high-performance computing on modern accelerators. The memory hierarchy consists of separate host and device memory systems, and the CUDA memory model exposes this hierarchy to the programmer.
 
-1.7 GPU Architecture:
-This section provides an overview of GPU architecture, discussing its key components and their functionalities.
+4.3 Memory Access Patterns <br>
+Optimizing memory access patterns is crucial for maximizing global memory throughput and improving kernel performance. Aligned and coalesced memory accesses are preferred, especially for cached loads and global memory writes, as they minimize wasted bandwidth and maximize bus utilization.
 
-1.8 Pascal Architecture:
-The chapter introduces the Pascal architecture, which is a specific GPU architecture developed by NVIDIA.
+4.4 What bandwidth Can a Kernel Achieve <br>
+this section provides insights into the factors affecting kernel performance, such as memory latency, memory bandwidth, block size, and different transpose techniques. It emphasizes the importance of optimizing these factors to achieve the best possible bandwidth for a kernel.
 
-1.9 GPU Memory Types:
-Different types of memory are available in GPUs, and this section explains the various GPU memory types.
+4.5 Matrix Addition with unified memory <br>
+Unified Memory is a feature introduced in CUDA 6.0 that simplifies memory management in the CUDA programming model. It creates a pool of managed memory that can be accessed by both the CPU and GPU using the same memory address. This eliminates the need for explicit memory copies and allows for easier management of memory allocations.
 
-1.10 Warps and Waves:
-Warps and waves are fundamental concepts in GPU programming, and this section provides an explanation of these concepts.
+## Further Chapter 3 Explanation
+### 3.1.1 GPU Architectur Overview:
+The GPU architecture is built around a scalable array of Streaming Multiprocessors (SM). Each SM is designed to support concurrent execution of hundreds of threads. When a kernel grid is launched, the thread blocks of that kernel grid are distributed among available SMs for execution. The GPU architecture also employs a Single Instruction Multiple Thread (SIMT) architecture to manage and execute threads in groups of 32 called warps. All threads in a warp execute the same instruction at the same time. The Fermi architecture, in particular, features up to 512 accelerator cores called CUDA cores and has six 384-bit GDDR5 DRAM memory interfaces supporting up to a total of 6 GB of global on-board memory.
 
-1.11 Blocks and Grids:
-The chapter discusses blocks and grids, which are used to organize threads in GPU programming.
-
-1.12 Occupancy:
-Occupancy refers to the utilization of GPU resources, and this section explains how to optimize occupancy for better performance.
-
-## Chapter 2: Thinking and Coding in Parallel
-2.1 Flynn's Taxonomy
-In this chapter, the concept of Flynn's Taxonomy is introduced, which categorizes computer architectures based on the number of instruction streams and data streams they can handle simultaneously.
-
-2.2 Kernel Call Syntax
-The syntax for calling a kernel in CUDA is explained in this section, providing the necessary information for executing parallel code on the GPU.
-
-2.3 3D Kernel Launches
-This section discusses the ability to launch kernels in three dimensions, allowing for more flexibility in parallel programming.
-
-2.4 Latency Hiding and Occupancy
-The concept of latency hiding is explored, which involves overlapping memory access with computation to improve performance. The importance of occupancy, which refers to the number of active warps on a GPU, is also discussed.
-
-2.5 Parallel Patterns
-Parallel patterns, such as parallel reduction, are introduced as common techniques for solving GPU problems efficiently.
-
-2.6 Parallel Reduce
-This section focuses on parallel reduction, which involves combining multiple values into a single result using parallel processing techniques.
-
-2.7 Shared Memory
-The use of shared memory in CUDA programming is explained, highlighting its benefits in improving memory access efficiency.
-
-2.8 Matrix Multiplication
-The topic of matrix multiplication is covered, demonstrating how parallel processing can be utilized to accelerate this computationally intensive task.
-
-2.9 Tiled Matrix Multiplication
-Tiled matrix multiplication, a technique that improves memory access patterns and reduces global memory access, is discussed in this section.
-
-2.10 BLAS
-The Basic Linear Algebra Subprograms (BLAS) library is mentioned as a fast and efficient solution for standard calculations like matrix multiplication. However, the importance of learning to write custom CUDA kernels is emphasized for situations where an out-of-the-box solution is not available.
-
-## Further Chapter 1 Explanation
-### 1.1 Background:
-
-The background section provides an overview of the importance of understanding hardware constraints when designing high-performance code. It explains that while correct computer code can be written by following the formal rules of a programming language, compiled code actually runs on physical hardware. The section also mentions the importance of having insights into the capabilities of the underlying hardware in order to write effective programs for GPUs and CPUs.
-
-### 1.2 First CUDA Example:
+### 3.1.2 The Fermi Architecture:
 
 The first CUDA example in the document demonstrates the use of CUDA to evaluate the integral of sin(x) from 0 to π using the trapezoidal rule. The code calculates the sum of a large number of equally spaced evaluations of the function within the given range. The number of steps and terms in the Taylor series used to evaluate sin(x) are represented by the variables "steps" and "terms" respectively. The example showcases the ability of CUDA to run thousands of simultaneous threads, providing a potential speed-up compared to a single CPU thread.
 
-### 1.3 CPU Architecture:
+### 3.1.3 the Kepler Architecture:
 
 - Master Clock: The master clock acts as a conductor, sending clock pulses at a fixed frequency to each unit of the CPU. The processing speed of the CPU is directly proportional to this frequency.
 - Memory: The main memory holds both the program data and the machine code instructions. It is where the CPU retrieves and stores data during its operations.
@@ -104,13 +72,13 @@ The first CUDA example in the document demonstrates the use of CUDA to evaluate 
 
 ![CPU_Architecture](1.3_CPU__Architecture.png)
 
-### 1.4 CPU Compute Power:
+### 3.1.4 Profile-Driven Optimization:
 
 The compute power of individual CPUs has significantly increased over the past 30 years, with a factor of more than 10^6. This growth has been driven by innovations in design rather than an increase in frequency. Multicore technology has been a major contributor to performance per chip since 2002. While GPUs are not included in this plot, recent Intel Xeon-phi designs with hundreds of cores are becoming more GPU-like. The power used by a single device has remained relatively stable since 2002. These advancements in compute power have transformed society and show no signs of slowing down.
 
 ![Moore's Law for CPUs](Moores_Law.png)
 
-### 1.5 CPU Memory Management: Latency Hiding Using Caches:
+### 3.2.1: Warps and thread Blocks
 
 In CPU memory management, latency hiding is achieved through the use of caches. Data and instructions do not move instantly between blocks, but progress clock-step by clock-step through hardware registers, resulting in a latency between issuing a request for data and its arrival. This latency is typically tens of clock-cycles on a CPU. Caches help mitigate the performance impact of latency by exploiting the fact that data stored in sequential physical memory locations are mostly processed sequentially in code. When one element of data is requested, the hardware sends this element and a number of adjacent elements on successive clock-ticks, making successive elements available without additional latency. Memory cache units are employed to buffer data streaming from multiple places in main memory, and there are separate L1 caches for data and instructions. The use of caches helps hide latency and improve overall performance.
 
