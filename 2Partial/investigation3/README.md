@@ -55,7 +55,7 @@ Unified Memory is a feature introduced in CUDA 6.0 that simplifies memory manage
 ### 3.1.1 GPU Architectur Overview:
 The GPU architecture is built around a scalable array of Streaming Multiprocessors (SM). Each SM is designed to support concurrent execution of hundreds of threads. When a kernel grid is launched, the thread blocks of that kernel grid are distributed among available SMs for execution. The GPU architecture also employs a Single Instruction Multiple Thread (SIMT) architecture to manage and execute threads in groups of 32 called warps. All threads in a warp execute the same instruction at the same time. The Fermi architecture, in particular, features up to 512 accelerator cores called CUDA cores and has six 384-bit GDDR5 DRAM memory interfaces supporting up to a total of 6 GB of global on-board memory.
 
-![GPU Architecture](3.1.1 GPU Architecture.png)
+![GPUArchitecture](GPUArchitecture.png)
 
 ### 3.1.2 The Fermi Architecture:
 The Fermi architecture is a GPU computing architecture that was the first to deliver the features required for demanding high-performance computing (HPC) applications. It features up to 512 accelerator cores called CUDA cores, organized into 16 streaming multiprocessors (SM) with 32 CUDA cores each. Fermi also has six 384-bit GDDR5 DRAM memory interfaces supporting up to 6 GB of global on-board memory. It includes a GigaThread engine for distributing thread blocks to the SM warp schedulers. Fermi supports concurrent kernel execution, allowing multiple kernels to be run on the device at the same time.
@@ -67,9 +67,9 @@ The Fermi architecture is a GPU computing architecture that was the first to del
 - Hyper-Q is another innovation in the Kepler architecture. It adds more simultaneous hardware connections between the CPU and GPU, allowing CPU cores to run more tasks on the GPU simultaneously. This increases GPU utilization and reduces CPU idle time.
 - Overall, the Kepler architecture provides improved performance, power efficiency, and programmability, making it a valuable choice for high-performance computing applications.
 
-![Dynamic Parallelism](3.1.3 Dynamic Parallelism.png) 
+![Dynamic Parallelism](DynamicParallelism.png) 
 <br>
-![Fermi vs Kepler](3.1.3 Fermi vs Kepler.png)
+![Fermi vs Kepler](FermivsKepler.png)
 
 ### 3.1.4 Profile-Driven Optimization:
 Profile-Driven Optimization is the act of analyzing program performance by measuring various factors such as the space or time complexity of application code, the use of particular instructions, and the frequency and duration of function calls. It is a critical step in program development, especially for optimizing HPC (High-Performance Computing) application code. By using profiling tools, developers can identify performance bottlenecks and gain insight into how compute resources are being utilized in CUDA programming. Profiling tools like nvvp and nvprof provide deep insight into kernel performance and help in identifying bottlenecks and guiding optimizations.
@@ -92,7 +92,7 @@ There are resource limits imposed on thread blocks, such as the maximum number o
 - **Conclusion** <br>
 Understanding the nature of warp execution and thread block configuration is crucial for efficient CUDA programming. It is important to minimize warp divergence, avoid race conditions, and optimize resource usage to achieve high performance.
 
-![warps and Thread blocks](3.2.1 warps and Thread blocks.png)
+![warps and Thread blocks](WarpsandThreadblocks.png)
 
 ### 3.2.2 Warp Divergence:
 Warp divergence occurs when threads within a warp take different code paths. This can happen when threads in a warp execute different instructions based on conditional statements. When warp divergence occurs, the warp serially executes each branch path, disabling threads that do not take that path. This can result in degraded performance as the amount of parallelism in the warp is reduced. It is important to avoid different execution paths within the same warp to obtain the best performance. <br>
@@ -172,22 +172,22 @@ It explains that dynamic parallelism allows for the creation of new work directl
 ### 3.4.1 The parallel Reduction Problem
 The parallel reduction problem involves calculating the sum of an array of integers in parallel. Instead of sequentially adding each element, the array can be divided into smaller chunks and each thread can calculate the partial sum for its chunk. The partial results from each chunk are then added together to obtain the final sum. This approach takes advantage of the associative and commutative properties of addition to perform parallel addition efficiently.
 
-![Parallel Reduction Problem](3.4.1 The Parallel Reduction Problem.png)
+![Parallel Reduction Problem](TheParallelReductionProblem.png)
 
 ### 3.4.2 Divergence in Parallel Reduction
 Divergence refers to the situation where threads within a warp take different execution paths. This can happen when there is conditional execution within a warp, leading to poor kernel performance. To avoid divergence, techniques such as rearranging data access patterns can be used. One approach is the neighbored pair implementation, where each thread adds two adjacent elements to produce a partial sum. Another approach is the interleaved pair implementation, where paired elements are separated by a given stride. These techniques help reduce or eliminate warp divergence and improve the performance of parallel reduction kernels.
 
-![Divergence in Parallel Reduction](3.4.2 Divergence in Parallel Reduction.png)
+![Divergence in Parallel Reduction](DivergenceinParallelReduction.png)
 
 ### 3.4.3 Improving Divergence in Parallel Reduction
 To improve divergence, the array index of each thread can be rearranged to force neighboring threads to perform the addition. This reduces divergence and improves the efficiency of the parallel reduction algorithm. The implementation involves setting the array access index for each thread and using conditional statements to ensure that only certain threads perform the addition. By reducing divergence, the parallel reduction algorithm can achieve better performance.
 
-![Improving Divergence in Parallel Reduction](3.4.3 Improving Divergence in Parallel Reduction.png)
+![Improving Divergence in Parallel Reduction](ImprovingDivergenceinParallelReduction.png)
 
 ### 3.4.4 Reducing with Interleaved Pairs
 Reducing with interleaved pairs involves pairing elements in a given stride. This implementation allows a thread to take two adjacent elements and produce one partial sum at each step. For an array with N elements, this approach requires N - 1 sums and log2N steps. The inputs to a thread in this implementation are strided by half the length of the input on each step. The kernel code for interleaved reduction is provided in the document.
 
-![Reducing with Interleaved Pairs](3.4.4 Reducing with Interleaved Pairs.png)
+![Reducing with Interleaved Pairs](ReducingwithInterleavedPairs.png)
 
 ### 3.5.1 Reducing With Unrolling
 Unrolling loops is a technique used to optimize loop execution by reducing the frequency of branches and loop maintenance instructions. It involves writing the body of a loop multiple times instead of using a loop to execute it repeatedly. The number of copies made of the loop body is called the loop unrolling factor. Unrolling loops can improve performance for sequential array processing loops where the number of iterations is known prior to execution of the loop.
