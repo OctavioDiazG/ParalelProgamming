@@ -55,200 +55,174 @@ Unified Memory is a feature introduced in CUDA 6.0 that simplifies memory manage
 ### 3.1.1 GPU Architectur Overview:
 The GPU architecture is built around a scalable array of Streaming Multiprocessors (SM). Each SM is designed to support concurrent execution of hundreds of threads. When a kernel grid is launched, the thread blocks of that kernel grid are distributed among available SMs for execution. The GPU architecture also employs a Single Instruction Multiple Thread (SIMT) architecture to manage and execute threads in groups of 32 called warps. All threads in a warp execute the same instruction at the same time. The Fermi architecture, in particular, features up to 512 accelerator cores called CUDA cores and has six 384-bit GDDR5 DRAM memory interfaces supporting up to a total of 6 GB of global on-board memory.
 
-### 3.1.2 The Fermi Architecture:
+![GPU Architecture](3.1.1 GPU Architecture.png)
 
-The first CUDA example in the document demonstrates the use of CUDA to evaluate the integral of sin(x) from 0 to π using the trapezoidal rule. The code calculates the sum of a large number of equally spaced evaluations of the function within the given range. The number of steps and terms in the Taylor series used to evaluate sin(x) are represented by the variables "steps" and "terms" respectively. The example showcases the ability of CUDA to run thousands of simultaneous threads, providing a potential speed-up compared to a single CPU thread.
+### 3.1.2 The Fermi Architecture:
+The Fermi architecture is a GPU computing architecture that was the first to deliver the features required for demanding high-performance computing (HPC) applications. It features up to 512 accelerator cores called CUDA cores, organized into 16 streaming multiprocessors (SM) with 32 CUDA cores each. Fermi also has six 384-bit GDDR5 DRAM memory interfaces supporting up to 6 GB of global on-board memory. It includes a GigaThread engine for distributing thread blocks to the SM warp schedulers. Fermi supports concurrent kernel execution, allowing multiple kernels to be run on the device at the same time.
 
 ### 3.1.3 the Kepler Architecture:
+- The Kepler GPU architecture, released in the fall of 2012, is a fast and highly efficient, high-performance computing architecture. It introduces several important innovations, including enhanced streaming multiprocessors (SMs), dynamic parallelism, and Hyper-Q.
+- The Kepler architecture features 15 streaming multiprocessors (SMs) and six 64-bit memory controllers. It offers improved programmability and power efficiency compared to previous architectures. The SM units in Kepler have several architectural innovations that enhance performance and power efficiency.
+- Dynamic parallelism is a key feature introduced with Kepler GPUs. It allows the GPU to dynamically launch new grids and enables any kernel to launch another kernel. This feature simplifies the creation and optimization of recursive and data-dependent execution patterns.
+- Hyper-Q is another innovation in the Kepler architecture. It adds more simultaneous hardware connections between the CPU and GPU, allowing CPU cores to run more tasks on the GPU simultaneously. This increases GPU utilization and reduces CPU idle time.
+- Overall, the Kepler architecture provides improved performance, power efficiency, and programmability, making it a valuable choice for high-performance computing applications.
 
-- Master Clock: The master clock acts as a conductor, sending clock pulses at a fixed frequency to each unit of the CPU. The processing speed of the CPU is directly proportional to this frequency.
-- Memory: The main memory holds both the program data and the machine code instructions. It is where the CPU retrieves and stores data during its operations.
-- Registers: The register file contains a small amount of high-speed memory that the CPU uses to store and manipulate data during its operations.
-- Von Neumann vs. Harvard Architecture: Computers with von Neumann architecture store instructions and data in a common memory, while Harvard architecture uses separate hardware to store data and instructions.
-- Program Counter (PC): The program counter keeps track of the memory address of the next instruction to be executed by the CPU.
-- Cache: The CPU has multiple levels of caching memories, including L1, L2, and L3 caches. These caches store frequently accessed data to improve performance by reducing the time it takes to retrieve data from the main memory.
-- Clock Frequency: The clock frequency determines the speed at which the CPU can execute instructions. Over the years, the clock frequency has increased, but it has reached a limit due to power requirements and heat generation.
-- Moore's Law: Moore's Law states that the number of transistors on a chip doubles approximately every two years, leading to increased computational power and performance.
-
-![CPU_Architecture](1.3_CPU__Architecture.png)
+![Dynamic Parallelism](3.1.3 Dynamic Parallelism.png) 
+<br>
+![Fermi vs Kepler](3.1.3 Fermi vs Kepler.png)
 
 ### 3.1.4 Profile-Driven Optimization:
+Profile-Driven Optimization is the act of analyzing program performance by measuring various factors such as the space or time complexity of application code, the use of particular instructions, and the frequency and duration of function calls. It is a critical step in program development, especially for optimizing HPC (High-Performance Computing) application code. By using profiling tools, developers can identify performance bottlenecks and gain insight into how compute resources are being utilized in CUDA programming. Profiling tools like nvvp and nvprof provide deep insight into kernel performance and help in identifying bottlenecks and guiding optimizations.
 
-The compute power of individual CPUs has significantly increased over the past 30 years, with a factor of more than 10^6. This growth has been driven by innovations in design rather than an increase in frequency. Multicore technology has been a major contributor to performance per chip since 2002. While GPUs are not included in this plot, recent Intel Xeon-phi designs with hundreds of cores are becoming more GPU-like. The power used by a single device has remained relatively stable since 2002. These advancements in compute power have transformed society and show no signs of slowing down.
+### 3.2.1 Warps and thread Blocks:
+Warps and thread blocks are fundamental concepts in CUDA execution model. A thread block is a collection of threads organized in a 1D, 2D, or 3D layout. From the hardware perspective, a thread block is a 1D collection of warps. Each thread block consists of multiple warps, and each warp consists of 32 consecutive threads. All threads within a warp execute the same instruction in a Single Instruction Multiple Thread (SIMT) fashion.
 
-![Moore's Law for CPUs](Moores_Law.png)
+- **Thread Block Configuration** <br>
+Thread blocks can be configured to be one-, two-, or three-dimensional. However, from the hardware perspective, all threads are arranged one-dimensionally. Each thread has a unique ID in a block, and for a one-dimensional thread block, the unique thread ID is stored in the CUDA built-in variable threadIdx.x. Threads with consecutive values for threadIdx.x are grouped into warps.
 
-### 3.2.1: Warps and thread Blocks
+- **Warp Divergence** <br>
+Warp divergence occurs when threads within a warp take different paths through an application. This can happen when there are conditional branches in the code. If threads in the same warp diverge, the warp serially executes each branch path, disabling threads that do not take that path. Warp divergence can significantly degrade performance as it reduces the amount of parallelism within a warp.
 
-In CPU memory management, latency hiding is achieved through the use of caches. Data and instructions do not move instantly between blocks, but progress clock-step by clock-step through hardware registers, resulting in a latency between issuing a request for data and its arrival. This latency is typically tens of clock-cycles on a CPU. Caches help mitigate the performance impact of latency by exploiting the fact that data stored in sequential physical memory locations are mostly processed sequentially in code. When one element of data is requested, the hardware sends this element and a number of adjacent elements on successive clock-ticks, making successive elements available without additional latency. Memory cache units are employed to buffer data streaming from multiple places in main memory, and there are separate L1 caches for data and instructions. The use of caches helps hide latency and improve overall performance.
+- **Synchronization and Hazards** <br>
+Threads within a thread block can share data through shared memory and registers. However, when sharing data between threads, it is important to avoid race conditions or hazards. Race conditions occur when multiple threads access the same memory location in an unordered manner. Proper synchronization techniques, such as using synchronization barriers, can be used to coordinate communication between threads and avoid race conditions.
 
-### 1.6 CPU: Parallel Instruction Set:
+- **Resource Limits and Occupancy** <br>
+There are resource limits imposed on thread blocks, such as the maximum number of threads per block, maximum number of concurrent warps per multiprocessor, and maximum amount of shared memory per multiprocessor. Achieving high occupancy, which refers to the number of concurrent threads or warps per SM, is important for performance optimization. However, full occupancy is not the only goal, and other factors need to be considered for performance tuning.
 
-- Intel CPUs have parallel capabilities in the form of vector instructions, starting with the Pentium III SSE instruction set in 1999.
-- These vector instructions use registers capable of holding multiple data items, allowing for parallel execution of operations on these items.
-- The use of vector instructions, such as SSE, can significantly speed up floating-point calculations by a factor of four or more.
-- Over the years, Intel CPUs have evolved to support more advanced vector instructions, such as AVX2 and AVX-512, with wider registers and support for various data types.
-- AVX-512, the most recent version, uses 512-byte registers capable of holding vectors of up to 16 floats or 8 doubles.
-- The use of AVX and other vector instructions on Intel CPUs is discussed in more detail in Appendix D.
+- **Conclusion** <br>
+Understanding the nature of warp execution and thread block configuration is crucial for efficient CUDA programming. It is important to minimize warp divergence, avoid race conditions, and optimize resource usage to achieve high performance.
 
-![CPU_Parallel_instruction_Set](1.6_CPU_Parallel_instruction_Set.png)
+![warps and Thread blocks](3.2.1 warps and Thread blocks.png)
 
-### 1.7 GPU Architecture:
+### 3.2.2 Warp Divergence:
+Warp divergence occurs when threads within a warp take different code paths. This can happen when threads in a warp execute different instructions based on conditional statements. When warp divergence occurs, the warp serially executes each branch path, disabling threads that do not take that path. This can result in degraded performance as the amount of parallelism in the warp is reduced. It is important to avoid different execution paths within the same warp to obtain the best performance. <br>
+- Warp divergence happens when threads within a warp take different code paths.
+- Threads in a warp must execute the same instruction on each cycle.
+- If threads of a warp diverge, the warp serially executes each branch path, disabling threads that do not take that path.
+- Warp divergence can cause significantly degraded performance as the amount of parallelism in the warp is reduced.
+- Different conditional values in different warps do not cause warp divergence.
 
-- GPUs were initially designed for high-performance computer graphics in gaming. They were capable of performing a large number of pixel calculations per second, which was not possible with traditional processors. This led to the emergence of gaming cards with dedicated hardware for pixel calculations.
--NVIDIA produces three classes of GPUs: GeForce GTX, GeForce RTX, and Titan. These models are aimed at the gaming market and vary in terms of features and price. The GeForce GTX series is the least expensive among them.
+### 3.2.3 Resource Partitioning:
+Resource partitioning is an important consideration in CUDA programming. It involves managing the compute resources available on the GPU to maximize performance. The number of active warps is limited by the compute resources, so it is crucial to be aware of the hardware restrictions and the resources used by the kernel. By maximizing the number of active warps, the GPU utilization can be maximized as well.
+- **Partition Camping** <br>
+Partition camping is a phenomenon that can occur when accessing global memory. It refers to the situation where memory requests are queued at some partitions while other partitions remain unused. This can lead to suboptimal performance. To improve performance, it is recommended to evenly divide the concurrent access to global memory among partitions. This can be achieved by adjusting the block execution order or using diagonal block coordinate mapping.
 
-### 1.8 pascal architecture:
+- **Guidelines for Improving Bandwidth Utilization** <br>
+To improve bandwidth utilization, two guidelines are provided. First, maximize the number of concurrent memory accesses in-flight. This can be done by creating more independent memory requests in each thread or adjusting the grid and block execution configuration. Second, maximize the utilization of bytes that travel on the bus between global memory and on-chip memory. This can be achieved by striving for aligned and coalesced memory accesses.
 
-The Pascal architecture is used in NVIDIA GPUs and is built up in a hierarchical manner. The basic unit is a compute-core capable of performing basic 32-bit floating point and integer operations. These cores do not have individual program counters. Groups of 32 cores are clustered together to form "warp-engines" which are the basic execution units in CUDA kernel programs. Warp-engines add additional compute resources shared by its cores, including special function units (SFUs) for fast evaluation of transcendental functions and double precision floating point units (FP64). Warp-engines are grouped together to form symmetric multiprocessors (SMs). In Pascal GPUs, warp-engines have eight SFUs and either 16 or one FP64 unit.
+- **Understanding the Nature of Warp Execution** <br>
+When launching a kernel, threads in the kernel run in parallel from a logical point of view. However, not all threads can physically execute in parallel at the same time. Warps are the basic unit of execution in an SM, and threads within a warp are executed in groups of 32. It is important to understand warp execution from the hardware perspective to guide kernel design and optimize performance.
 
-### 1.9 GPU Memory Types:
+- **CUDA Memory Model** <br>
+The CUDA memory model unifies the host and device memory systems and allows explicit control over data placement for optimal performance. It exposes the full memory hierarchy and provides benefits such as improved latency and bandwidth. Applications often exhibit temporal and spatial locality, and the memory hierarchy takes advantage of this by providing progressively lower-latency but lower-capacity memory levels. By understanding the memory model, developers can efficiently use global memory in their kernels.
 
-- Main memory: This is the primary memory of the GPU, similar to the main memory of a CPU. It stores the program and data for GPU processing. Data transfers between the CPU and GPU main memory can be relatively slow, so it is recommended to minimize these transfers. However, data in the GPU main memory can be reused by successive kernel calls without reloading.
+### 3.2.4 Latency Hiding:
+Latency hiding is a crucial concept in CUDA programming that allows GPUs to maximize their utilization and throughput. It involves hiding the latency of instructions by executing other instructions from different resident warps. GPUs are designed to handle a large number of concurrent and lightweight threads, which enables them to hide instruction latency effectively. 
 
-- Constant Memory: A dedicated 64 KB of GPU main memory is reserved for constant data. Constant memory has a dedicated cache that bypasses the L2 cache, making it fast for reading the same memory location by all threads in a warp.
+- Latency hiding in CUDA programming is achieved by executing instructions from different resident warps.
+- GPUs are designed to handle a large number of concurrent and lightweight threads to maximize throughput.
+- Instruction latency can be classified into arithmetic instruction latency and memory instruction latency.
+- Arithmetic instruction latency is the time between an arithmetic operation starting and its output being produced.
+- Memory instruction latency is the time between a load or store operation being issued and the data arriving at its destination.
+- GPUs can hide arithmetic instruction latency more effectively than memory instruction latency.
+- The number of active warps per SM plays a crucial role in latency hiding.
+- Little's Law can be used to estimate the number of active warps required to hide latency.
+- Choosing an optimal execution configuration is important to strike a balance between latency hiding and resource utilization.
 
-- Texture and Constant Data: Texture and constant data are stored in the GPU main memory. Although they are read-only on the GPU, they can be written to by the CPU. These types of data can be helpful in certain applications, such as manipulating frames of a movie, where parallel data transfers can occur while the GPU is processing the current frame.
+### 3.2.5 Occupancy:
+Occupancy refers to the ratio of active warps to the maximum number of warps per Streaming Multiprocessor (SM) in a GPU. It is an important metric for optimizing performance in CUDA applications. Achieving high occupancy allows for better utilization of compute resources and can lead to improved performance. However, it is important to note that higher occupancy does not always guarantee higher performance, as other factors can also impact performance.
 
-- Shared Memory: Each SM provides between 32 KB and 64 KB of shared memory. If a kernel requires shared memory, the size required can be declared either at kernel launch time or at compile time. Each concurrently executing thread block on an SM gets the same size memory block. Shared memory is important because it is very fast and provides the best way for threads within a thread block to communicate with each other. Recent GPUs have better memory caching, so using shared memory for faster access is less important now. It is important to balance the performance gain from using shared memory against reduced SM occupancy when large amounts of shared memory are needed.
+- Occupancy is the ratio of active warps to the maximum number of warps per SM.
+- Higher occupancy allows for better utilization of compute resources.
+- Achieving high occupancy can lead to improved performance in CUDA applications.
+- However, higher occupancy does not always equate to higher performance, as other factors can also impact performance.
 
-- Register File: Each SM has 64K 32-bit registers which are shared equally by the thread blocks concurrently executing on the SM. This is a very important memory resource. If a thread uses more than 32 registers, the maximum number of thread blocks running on the SM (occupancy) is reduced, potentially harming performance. The NVCC compiler has a switch, --maxrregcount <number>, that can be used to tune overall performance by trading occupancy against thread computational performance.
+### 3.2.6 Synchronization:
+Synchronization in CUDA refers to the coordination of threads in a thread block during the execution of a kernel. It allows threads to wait for each other to reach a specific point in their execution before proceeding further. There are two levels of synchronization in CUDA: system-level and block-level.
 
-- Local Memory: Local memory is memory blocks private to each individual executing thread. They are used as overflow storage for local variables in intermediate temporary results when the registers available to a thread are insufficient. Local memory is cached via the L2 and L1 caches, just like other data.
+**System-level Synchronization**
+System-level synchronization involves waiting for all work on both the host and the device to complete. This can be achieved using the 
+```CUDA
+cudaError_t cudaDeviceSynchronize(void);
+```
+function, which blocks the host application until all CUDA operations have completed. It ensures that all asynchronous CUDA operations, such as memory copies and kernel launches, have finished before the host continues its execution.
 
-![GPU_Memory_Types](1.9_GPU_Memory_Types.png)
+**Block-level Synchronization**
+Block-level synchronization, on the other hand, involves waiting for all threads in a thread block to reach the same point in their execution on the device. This is done using the
+```CUDA 
+__device__void__syncthreads(void);
+```
+ function, which is called within a kernel. When ``` __syncthreads ``` is called, each thread in the same thread block must wait until all other threads in that block have reached the synchronization point. This ensures that all global and shared memory accesses made by the threads prior to the synchronization point are visible to all other threads in the block after the synchronization.
 
-### 1.10 Warps and Waves:
+### 3.2.7 Scalability:
+Scalability is a desirable feature in parallel applications as it allows for improved performance by adding additional hardware resources. In the context of CUDA applications, scalability means that running the application on multiple Streaming Multiprocessors (SMs) can halve the execution time compared to running on a single SM. Scalable parallel programs efficiently utilize all compute resources to enhance performance. Scalability is important as it allows for the execution of the same application code on varying numbers of compute cores, known as transparent scalability, reducing the burden on developers and broadening the use-cases for existing applications.
 
-In CUDA, the GPU architecture is reflected in the design and launch of a CUDA kernel. Choosing the right number of threads, Nthreads, is crucial when designing CUDA kernels. The goal is to have as many threads as possible, ideally matching the problem size.
+**Scalability in CUDA Programs** <br>
+When a CUDA kernel is launched, thread blocks are distributed among multiple SMs, and these blocks can be executed in any order, either in parallel or in series. This independence of execution allows CUDA programs to scale across an arbitrary number of compute cores. For example, a GPU with two SMs can execute two blocks simultaneously, while a GPU with four SMs can execute four blocks at the same time. This scalability is achieved without requiring any code changes, as the execution time of the application scales according to the available resources.
 
-The GPU used in the examples is the RTX 2070, which has 36 SM units (Nsm = 36). Each SM can process two warps of 32 threads (Nwarp = 2). Therefore, for this GPU, Ncores = Nsm × Nwarp × 32 = 2304.
+### 3.3.1 Checking Active Warps with nvprof:
+Process of checking active warps using nvprof, a profiling tool in CUDA programming. It explains that active warps are the warps that have been allocated compute resources and are ready for execution. The document provides examples of different thread block configurations and their corresponding achieved occupancy values, which indicate the ratio of active warps to the maximum number of warps supported on a streaming multiprocessor (SM). It also highlights that achieving higher occupancy does not always guarantee better performance and that other factors can restrict performance.
 
-The number of warps per SM has varied over GPU generations. In the early Kepler generation, it peaked at six (192 cores) but fell back to two (64 cores) in the Pascal generation. The performance of many kernels is limited by the number of SMs rather than the number of cores.
+### 3.3.2 Checking Memory Operations with nvprof:
+Analyze memory operations in CUDA programs. It mentions the use of metrics such as "gld_throughput" and "gld_efficiency" to measure memory read efficiency and global load efficiency, respectively. The text provides examples of using nvprof to check these metrics for different execution configurations of a kernel. It also highlights the importance of load efficiency and how it can impact performance. Additionally, the text mentions the use of nvvp, a visual profiler, to inspect unified memory performance and measure unified memory traffic.
 
-The CUDA kernel should be designed to hide latencies in memory accesses and hardware pipelines. The GPU hardware can rapidly switch between threads and use data as soon as it becomes available. This latency hiding feature allows the GPU to efficiently process large numbers of threads.
+### 3.3.3 Exposing more Parallelism
+It explains that dynamic parallelism allows for the creation of new work directly from the GPU, enabling the expression of recursive or data-dependent parallel algorithms in a more natural and easy-to-understand way. By using dynamic parallelism, the decision of how many blocks and grids to create on the GPU can be postponed until runtime, allowing for better utilization of GPU hardware schedulers and load balancers. This can lead to improved performance and adaptability in response to data-driven decisions or workloads. The document also mentions that the ability to create work directly from the GPU reduces the need to transfer execution control and data between the host and device.
 
-It is important to note that the size of the thread block should be a multiple of the warp size (currently 32 for all NVIDIA GPUs) up to the maximum size of 1024. Threads within the same thread block can communicate and synchronize with each other using shared or global device memory.
+### 3.4.1 The parallel Reduction Problem
+The parallel reduction problem involves calculating the sum of an array of integers in parallel. Instead of sequentially adding each element, the array can be divided into smaller chunks and each thread can calculate the partial sum for its chunk. The partial results from each chunk are then added together to obtain the final sum. This approach takes advantage of the associative and commutative properties of addition to perform parallel addition efficiently.
 
-Overall, designing efficient CUDA kernels requires skill and experience, and choosing the right number of threads is a critical factor in achieving optimal performance.
+![Parallel Reduction Problem](3.4.1 The Parallel Reduction Problem.png)
 
-### 1.11 Blocks and Grids:
+### 3.4.2 Divergence in Parallel Reduction
+Divergence refers to the situation where threads within a warp take different execution paths. This can happen when there is conditional execution within a warp, leading to poor kernel performance. To avoid divergence, techniques such as rearranging data access patterns can be used. One approach is the neighbored pair implementation, where each thread adds two adjacent elements to produce a partial sum. Another approach is the interleaved pair implementation, where paired elements are separated by a given stride. These techniques help reduce or eliminate warp divergence and improve the performance of parallel reduction kernels.
 
-Blocks and grids are important concepts in CUDA programming. When launching a CUDA kernel, we specify the thread block size and the number of thread blocks. The total number of threads is implicitly determined as the product of the thread block size and the number of thread blocks.
+![Divergence in Parallel Reduction](3.4.2 Divergence in Parallel Reduction.png)
 
-The number of threads must be a multiple of the thread block size. If we want our kernel to run a specific number of threads, we need to ensure that the number of thread blocks is large enough to accommodate that number of threads.
+### 3.4.3 Improving Divergence in Parallel Reduction
+To improve divergence, the array index of each thread can be rearranged to force neighboring threads to perform the addition. This reduces divergence and improves the efficiency of the parallel reduction algorithm. The implementation involves setting the array access index for each thread and using conditional statements to ensure that only certain threads perform the addition. By reducing divergence, the parallel reduction algorithm can achieve better performance.
 
-It is important to note that threads are dispatched to streaming multiprocessors (SMs) for execution in complete waves when possible. Therefore, it is beneficial for the number of thread blocks to be a multiple of the number of SMs on the GPU being used.
+![Improving Divergence in Parallel Reduction](3.4.3 Improving Divergence in Parallel Reduction.png)
 
-Efficient use of the GPU can be achieved by carefully considering the number of thread blocks and the thread block size when designing CUDA kernels.
+### 3.4.4 Reducing with Interleaved Pairs
+Reducing with interleaved pairs involves pairing elements in a given stride. This implementation allows a thread to take two adjacent elements and produce one partial sum at each step. For an array with N elements, this approach requires N - 1 sums and log2N steps. The inputs to a thread in this implementation are strided by half the length of the input on each step. The kernel code for interleaved reduction is provided in the document.
 
-### 1.12 Occupancy:
+![Reducing with Interleaved Pairs](3.4.4 Reducing with Interleaved Pairs.png)
 
-Occupancy is defined as the ratio of the number of threads actually resident in the SM units compared to the maximum value Nres. It is usually expressed as a percentage. Full occupancy of 100 percent means that complete waves are running on the SMs of the GPU. However, even if we launch a kernel with sufficient threads to achieve 100 percent occupancy, we might not actually achieve full occupancy due to limited shared memory size and registers on each SM. The amount of shared memory and registers used by each thread block affects the occupancy. Less than full occupancy is not necessarily bad for performance, especially if the kernel is compute bound rather than memory bound. Experimentation may be necessary to determine the optimal occupancy for a specific kernel.
+### 3.5.1 Reducing With Unrolling
+Unrolling loops is a technique used to optimize loop execution by reducing the frequency of branches and loop maintenance instructions. It involves writing the body of a loop multiple times instead of using a loop to execute it repeatedly. The number of copies made of the loop body is called the loop unrolling factor. Unrolling loops can improve performance for sequential array processing loops where the number of iterations is known prior to execution of the loop.
 
-## Further Chapter 2 Explanation
+In the context of CUDA programming, unrolling loops can be used to improve performance by reducing instruction overheads and creating more independent instructions to schedule. This leads to higher saturation of instruction and memory bandwidth, resulting in more concurrent operations and better performance. Unrolling can be done in different ways, such as unrolling two data blocks by a single thread block or unrolling warps. The choice of unrolling technique depends on the specific requirements of the application.
 
-### 2.1 Flynn's Taxonomy:
+### 3.5.2 Reducing with Unrolled Warps
+Refers to a technique used in CUDA programming to optimize the performance of reduction kernels. It involves unrolling the last few iterations of a reduction loop to avoid executing loop control and thread synchronization logic. By doing so, the compiler can optimize the code and reduce the number of stalls caused by thread synchronization. This technique can lead to improved performance and higher saturation of instruction and memory bandwidth.
+### 3.5.3 Reducing with Complete Unrolling
+Complete unrolling is a technique used to improve performance in loops where the number of iterations is known at compile-time. By unrolling the loop, the number of times the loop condition is checked is reduced, resulting in fewer instruction overheads. Additionally, the memory operations within each iteration can be issued simultaneously, further improving performance. In CUDA, complete unrolling can be achieved by manually unrolling the loop and performing in-place reduction. This technique can lead to higher saturation of instruction and memory bandwidth, resulting in improved performance.
 
-Computer scientists categorize computer architectures into four types based on their ability to execute instructions and process data. These categories are represented by four-letter acronyms in Flynns taxonomy. The first category is SISD, which stands for Single Instruction Single Data. It refers to a single-core system running one thread. The second category is SIMD, which stands for Single Instruction Multiple Data. It involves multiple processors running the same task on multiple data streams. The third category is MIMD, which stands for Multiple Instruction Multiple Data. It represents a multi-core system with each core running a different task, or multiple connected systems. The fourth category is MISD, which stands for Multiple Instructions Single Data. It is rarely used and is mainly applicable in fault-tolerant designs. Finally, there is SIMT, which stands for Single Instruction Multiple Threads. It is a variation of SIMD implemented in CUDA, a parallel computing platform.
+### 3.5.4 Reducing with Template Functions
+Discusses the use of template functions to further reduce branch overhead in parallel reduction. It explains that CUDA supports template parameters on device functions, allowing the block size to be specified as a parameter of the template function. The code example provided demonstrates the use of template functions to implement a parallel reduction kernel with complete loop unrolling. The performance improvement achieved by this approach is also mentioned in the document.
 
-### 2.2 Kernel Call Syntax:
+### 3.6.1 Nested Execution
+Nested execution refers to the ability to create new work directly from the device, enabling the expression of recursive or data-dependent parallel algorithms in a more natural and easy-to-understand way. It involves launching child grids from within a kernel, which can have multiple levels of nesting. The depth of nested levels and the strategy for launching child grids are important considerations for implementing efficient nested kernels.
 
-The kernel call syntax in CUDA consists of up to four special arguments enclosed in <<< >>> brackets.
+- Nested execution allows for the creation of new work directly from the device.
+- It enables the expression of recursive or data-dependent parallel algorithms.
+- Child grids can be launched from within a kernel, resulting in multiple levels of nesting.
+- The depth of nested levels and the strategy for launching child grids are important for efficient implementation.
 
-1. The first argument defines the dimensions of the grid of thread blocks used by the kernel. It can be an integer for linear block addressing or a dim3 type for a 2D or 3D grid of thread blocks.
+### 3.6.2 Nested Hello World on the GPU
+The concept of dynamic parallelism is introduced in this section, where a kernel is created to print "Hello World" using nested, recursive execution. The parent grid is invoked by the host with 8 threads in a single thread block. Thread 0 in the parent grid then invokes a child grid with half as many threads. This process continues recursively until only one thread is left in the final nesting. The output of the nested kernel program is shown, indicating the recursion depth and the execution from each thread and block.
 
-2. The second argument defines the number of threads in a single thread block. It can be an integer for thread-linear addressing within a block or a dim3 type for a 2D or 3D array structure for the threads within a thread block.
+### 3.6.3 Nested Reduction
+Nested reduction is a technique used in parallel computing to perform a reduction operation on a large array of data elements. It involves dividing the input vector into smaller chunks and having each thread calculate the partial sum for its chunk. The partial results from each chunk are then added together to obtain the final sum. This approach reduces or avoids warp divergence, which can negatively impact kernel performance. Different implementations of nested reduction, such as the neighbored pair and interleaved pair approaches, can be used depending on the specific requirements of the reduction operation.
 
-3. The third argument is an optional argument that specifies the number of bytes of dynamically allocated shared memory used by each thread block of the kernel. If omitted or set to zero, no shared memory is reserved.
+### Chapter 3 Summary
+The CUDA execution model on GPU devices has two key features: threads are executed in warps in a Single Instruction Multiple Thread (SIMT) fashion, and hardware resources are partitioned among blocks and threads. These features allow you to control how your application utilizes instruction and memory bandwidth to increase parallelism and performance. Different GPU devices have different hardware limits, so grid and block heuristics are important for optimizing kernel performance. Dynamic parallelism enables the creation of new work directly from the device, allowing for the expression of recursive or data-dependent parallel algorithms. Implementing efficient nested kernels requires attention to the device runtime, including the child grid launch strategy, parent-child synchronization, and the depth of nested levels. In this chapter, you also learned how to analyze kernel performance using the command-line profiling tool, nvprof. Profiling is crucial in CUDA programming to identify performance bottlenecks and optimize kernel behavior.
 
-4. The fourth argument is also optional and specifies the CUDA stream in which the kernel should be executed.
+## Further Chapter 4 Explanation
 
-It is important to note that when calling a kernel, the host memory cannot be accessed by the kernel. All kernel arguments must be scalar items or pointers to previously allocated regions of device memory, and all arguments are passed by value.
-
-### 2.3 3D Kernel Launches:
-
-The 2.3 section of the document discusses the use of 3D kernel launches in CUDA programming. It introduces the concept of using dim3 variables to run a kernel on a 3D grid. The example provided in this section focuses on printing grid-related quantities and demonstrates the use of dim3 variables in a 3D grid. The code snippet in this section shows how to perform calculations on a 3D grid using thread blocks.
-
-### 2.4 Latency Hiding and Occupancy:
-
-Latency hiding is the technique of hiding the latency of memory access by doing independent work while waiting for the data to arrive. This can be achieved by executing instructions that do not depend on the pending data. GPUs are designed to efficiently switch between active warps, allowing them to continue executing instructions while waiting for memory access.
-
-Occupancy refers to the ratio of the number of active warps per multiprocessor to the maximum number of possible active warps. Higher occupancy does not always result in higher performance, but low occupancy can reduce the ability to hide latencies, leading to performance degradation.
-
-To achieve full occupancy, the thread block size, the number of thread blocks, the number of registers used by each thread, and the amount of shared memory used by a thread block should be optimized. The number of thread blocks should be an integer multiple of the number of streaming multiprocessors (SMs) in the GPU.
-
-The GPU architecture allows each warp engine to process multiple active warps in an interleaved fashion, switching between them when one warp stalls. This is possible because each thread in an active warp maintains its own state and set of registers, unlike in a standard CPU architecture where a single set of registers is shared by all active threads.
-
-Overall, latency hiding and occupancy are important considerations in GPU programming to maximize performance and utilize the GPU's parallel processing capabilities effectively.
-
-### 2.5 Parallel Patterns:
-
-1. Avoid If Statements
-One important aspect of CUDA programming is to avoid branch statements, such as if statements, in the code. Branch divergences can significantly impact performance, as threads within a warp may need to execute different code paths. It is recommended to minimize the use of if statements and instead find alternative approaches to achieve the desired functionality.
-
-2. Modest Conditional Execution
-If conditional execution is necessary, it is advised to keep it modest and limited to small fractions of the kernel's execution time. This helps mitigate the performance impact caused by branch divergences. For example, using conditional execution like
-if(flag==0) x= x+1;
-is less harmful compared to more complex if statements.
-
-3. Full Occupancy and Compact Code
-To optimize GPU performance, it is important to strive for full occupancy of the GPU cores. This can be achieved by keeping the kernel code compact and straightforward, allowing the compiler to allocate registers more effectively. Additionally, splitting long calculations into stages and using separate kernels for each stage can help improve performance.
-
-4. Memory Bound Kernels
-For memory bound kernels, achieving full occupancy becomes even more crucial. It is recommended to focus on optimizing memory access patterns and minimizing memory latency. Keeping the kernel code compact and straightforward is beneficial in these cases as well.
-
-5. Active Thread Cooperation
-In parallel programming for GPUs, threads often need to actively cooperate to perform calculations. This requires rethinking the approach to coding and finding efficient ways for threads to work together. It is important to design algorithms that can effectively utilize the massive parallelism offered by GPUs.
-
-These are some of the key considerations and patterns to keep in mind when programming in parallel with CUDA. By following these guidelines, developers can write effective parallel code and harness the power of GPUs for high-performance computing tasks.
-
-### 2.6 Parallel Reduce:
-
-The parallel reduce operation is a coding pattern used to perform the same operation on a large set of numbers. It involves finding the arithmetic sum of the numbers, but other operations like max or min can also be performed. The basic algorithm for parallel reduce is to use as many threads as possible to hide memory latency and iterate until the final sum is obtained. The reduce operation can be efficiently implemented on GPUs using techniques like shared memory and thread synchronization.
-
-### 2.7 Shared Memory:
-
-Shared memory is a fast access memory pool available on each Streaming Multiprocessor (SM) of NVIDIA GPUs. It has a typical size of 64 KB. Kernels can use shared memory by declaring variables with the
-__shared__
-decoration. Each thread block running on an SM gets a separate allocation of shared memory. Shared memory is local to the thread block and cannot be shared between different thread blocks.
-
-Shared memory allocation can be static or dynamic. Static allocation is preferred when the size of the variable is known at compile time, while dynamic allocation is used when the size is determined at runtime. Shared memory is useful for efficient communication between threads within a thread block.
-
-When optimizing occupancy, shared memory usage should be considered, as thread blocks requiring more than 32 KB of shared memory can reduce occupancy. Shared memory provides fast access and can be as fast as using registers. However, it is important to balance the performance gain from using shared memory against reduced SM occupancy when large amounts of shared memory are needed.
-
-Overall, shared memory is an important resource for efficient parallel programming on NVIDIA GPUs, allowing threads within a thread block to cooperate efficiently and communicate with each other.
-
-### 2.8 Matrix Multiplication:
-
-Matrix multiplication is a fundamental operation in linear algebra. It involves multiplying two matrices to produce a third matrix. The resulting matrix has dimensions determined by the number of rows in the first matrix and the number of columns in the second matrix.
-
-The formula for matrix multiplication is C = A * B, where A is an n x m matrix, B is an m x p matrix, and C is an n x p matrix. Each element of the resulting matrix C is calculated by taking the dot product of the corresponding row of A and column of B.
-
-To implement matrix multiplication efficiently in CUDA, shared memory can be used to reduce memory access latency. By dividing the matrices into smaller tiles and loading them into shared memory, the threads in a block can access the data more quickly.
-
-The CUDA SDK provides libraries like cuBLAS for performing matrix multiplication, which are highly optimized and offer better performance than custom kernel implementations. However, writing your own matrix multiplication kernels can be beneficial in situations where a custom solution is required or when dealing with smaller matrices.
-
-Overall, matrix multiplication is a common and important calculation in many scientific and computational applications, and understanding its implementation in CUDA can lead to significant performance improvements.
-
-![Matrix_Multiplication](2.8_Matrix_Multiplication.png)
-
-### 2.9 Tiled Matrix Multiplication:
-
-Tiled matrix multiplication is a technique used to optimize matrix multiplication on GPUs. It involves dividing the matrices into smaller tiles and performing the multiplication on these tiles. This allows for better utilization of the GPU's memory caching and can significantly improve performance.
-
-The idea behind tiled matrix multiplication is to exploit shared memory by storing different elements of the matrices in shared memory and then using all the cached values to calculate contributions to the product. This reduces the number of times elements need to be read from main memory, improving efficiency.
-
-To implement tiled matrix multiplication in CUDA kernels, thread blocks are used to represent pairs of tiles from the matrices. Each thread copies one element of its allocated tiles into shared memory arrays. Once this is done, the threads compute the elements of the tiled matrix multiplication to obtain the contribution of the tile pair to the resulting matrix.
-
-Tiled matrix multiplication can be further optimized by using larger thread blocks and by sharing both the A and B tiles between warps. However, these optimizations can increase the complexity of the code.
-
-Overall, tiled matrix multiplication is a powerful technique for improving the performance of matrix multiplication on GPUs by leveraging shared memory and reducing memory access.
-
-### 2.10 BLAS
-
-The Basic Linear Algebra Subprograms (BLAS) is a set of function libraries that are available for all serious computing platforms. BLAS provides routines for performing various linear algebra operations, such as matrix multiplication, vector addition, and dot product. These routines can be called from host code to perform the desired operations. The NVIDIA cuBLAS library is a GPU-accelerated version of BLAS, which allows BLAS functions to be run on the GPU using vectors and matrices in GPU memory. cuBLAS provides its own routines for allocating and transferring arrays between host and GPU memories, but it can also be used with other methods like thrust. BLAS is particularly useful for tasks like matrix multiplication, and its performance can be further enhanced by using tensor cores if available.
+**Coming Soon!!!** 
 
 ## References 
 
-[1] R. Ansorge, Programming in Parallel with CUDA: A Practical Guide. Cambridge, UK etc.: Cambridge University Press, 2022. 
+[1] J. Cheng, M. Grossman, and T. McKercher, Professional Cuda C Programming. Indianapolis (Ind.): Wrox, 2014. 
