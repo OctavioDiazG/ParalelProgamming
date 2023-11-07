@@ -1,0 +1,24 @@
+==1111== NVPROF is profiling process 1111, command: ./transpose
+==1111== Warning: Unified Memory Profiling is not supported on the current configuration because a pair of devices without peer-to-peer support is detected on this multi-GPU setup. When peer mappings are not available, system falls back to using zero-copy memory. It can cause kernels, which access unified memory, to run slower. More details can be found at: http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-managed-memory
+==1111== Profiling application: ./transpose
+==1111== Profiling result:
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+ GPU activities:   86.82%  1.9853ms         1  1.9853ms  1.9853ms  1.9853ms  [CUDA memcpy HtoD]
+                    6.62%  151.49us         1  151.49us  151.49us  151.49us  copyRow(float*, float*, int, int)
+                    6.56%  150.02us         1  150.02us  150.02us  150.02us  warmup(float*, float*, int, int)
+      API calls:   86.44%  634.10ms         2  317.05ms  434.00us  633.66ms  cudaMalloc
+                   12.79%  93.791ms         1  93.791ms  93.791ms  93.791ms  cudaDeviceReset
+                    0.32%  2.3634ms         1  2.3634ms  2.3634ms  2.3634ms  cudaMemcpy
+                    0.31%  2.2569ms         1  2.2569ms  2.2569ms  2.2569ms  cuDeviceGetPCIBusId
+                    0.07%  549.80us         2  274.90us  222.60us  327.20us  cudaFree
+                    0.06%  404.50us         2  202.25us  166.80us  237.70us  cudaDeviceSynchronize
+                    0.01%  57.000us         2  28.500us  15.400us  41.600us  cudaLaunchKernel
+                    0.00%  16.500us       101     163ns     100ns  1.2000us  cuDeviceGetAttribute
+                    0.00%  5.4000us         1  5.4000us  5.4000us  5.4000us  cudaSetDevice
+                    0.00%  5.0000us         1  5.0000us  5.0000us  5.0000us  cudaGetDeviceProperties
+                    0.00%  1.4000us         3     466ns     100ns  1.1000us  cuDeviceGetCount
+                    0.00%  1.3000us         2     650ns     600ns     700ns  cudaGetLastError
+                    0.00%  1.0000us         2     500ns     200ns     800ns  cuDeviceGet
+                    0.00%     600ns         1     600ns     600ns     600ns  cuDeviceGetName
+                    0.00%     400ns         1     400ns     400ns     400ns  cuDeviceTotalMem
+                    0.00%     200ns         1     200ns     200ns     200ns  cuDeviceGetUuid
