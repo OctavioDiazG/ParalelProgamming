@@ -1,5 +1,20 @@
 # memTransfer.cu
+## Code
+CUDA program that demonstrates how to use CUDA’s memory copy API to transfer data between the host (CPU) and the device (GPU). Here’s a step-by-step explanation:
 
+1. It first sets up the CUDA device with cudaSetDevice(dev).
+2. It then defines the size of the memory to be allocated on both the host and the device. The size is determined by isize, which is set to 1 << 22 (equivalent to 2 raised to the power of 22), and nbytes, which is the total size in bytes (obtained by multiplying isize by the size of a float).
+3. It retrieves and prints the properties of the CUDA device using cudaGetDeviceProperties().
+4. It allocates memory on the host (CPU) using malloc().
+5. It allocates memory on the device (GPU) using cudaMalloc().
+6. It initializes the host memory with the value 0.5f.
+7. It transfers the data from the host to the device using cudaMemcpy() with the cudaMemcpyHostToDevice flag.
+8. It then transfers the data back from the device to the host using cudaMemcpy() with the cudaMemcpyDeviceToHost flag.
+9. Finally, it frees the allocated memory on both the host and the device using free() and cudaFree(), and resets the device using cudaDeviceReset().
+
+This code doesn’t do any computation on the GPU. It simply demonstrates how to allocate memory and transfer data between the host and the device. Also, the CHECK() macro is likely a utility function used to check the return status of CUDA API calls and print an error message if something goes wrong. It’s not a standard CUDA function and is probably defined in the "../common/common.h" header file.
+
+## Profiler
 The profiler output is divided into two main sections: GPU activities and API calls.
 
 **GPU activities:** This section shows the time taken by the GPU to perform certain tasks. In this case, it shows that:
@@ -14,6 +29,17 @@ The profiler output is divided into two main sections: GPU activities and API ca
 Other API calls like cudaFree, cudaSetDevice, and cudaGetDeviceProperties also appear in the profiler output with their respective times, but these take up a very small fraction of the total API call time.
 
 # pinMemTransfer.cu
+## Code
+This CUDA program is similar to the previous one, but with a few key differences:
+
+1. It checks if the CUDA device supports mapping CPU host memory to the GPU using deviceProp.canMapHostMemory. If the device does not support this feature, the program prints a message and exits.
+2. It allocates pinned (page-locked) host memory using cudaMallocHost(). Pinned memory can be accessed by the device through Direct Memory Access (DMA), which can lead to faster data transfers between the host and the device.
+3. It initializes the host memory to 100.10f instead of 0.5f.
+4. It uses cudaFreeHost() to free the pinned host memory.
+
+The rest of the program is the same: it transfers data from the host to the device and back, and then frees the allocated memory. Please note that using pinned memory can lead to higher performance, but it’s a limited resource and should be used judiciously. Also, the CHECK() macro is likely a utility function used to check the return status of CUDA API calls and print an error message if something goes wrong. It’s not a standard CUDA function and is probably defined in the "../common/common.h" header file.
+
+## Profiler
 **GPU activities:**
 - 50.57% of the GPU’s time was spent on copying memory from the host to the device ([CUDA memcpy HtoD]). The total time spent on this operation was 1.3036ms.
 - 49.43% of the time was spent on copying memory from the device to the host ([CUDA memcpy DtoH]). The total time spent on this operation was 1.2743ms.
@@ -26,6 +52,25 @@ Other API calls like cudaFree, cudaSetDevice, and cudaGetDeviceProperties also a
 - cudaMalloc and cudaFree: These functions are used to allocate and free memory on the device. They took up 0.06% and 0.04% of the total API call time, amounting to 342.90us and 261.00us respectively.
 
 # readSegment.cu
+## Code
+This CUDA program demonstrates the impact of misaligned reads on performance. Here’s a step-by-step explanation:
+
+1. It first sets up the CUDA device with cudaSetDevice(dev).
+2. It then defines the size of the memory to be allocated on both the host and the device. The size is determined by nElem, which is set to 1 << 20 (equivalent to 2 raised to the power of 20), and nBytes, which is the total size in bytes (obtained by multiplying nElem by the size of a float).
+3. It retrieves and prints the properties of the CUDA device using cudaGetDeviceProperties().
+4. It allocates memory on the host (CPU) using malloc().
+5. It initializes the host memory with random values using initialData().
+6. It performs a sum operation on the host using sumArraysOnHost().
+7. It allocates memory on the device (GPU) using cudaMalloc().
+8. It copies data from the host to the device using cudaMemcpy().
+9. It launches two kernels, warmup() and readOffset(), which perform the same sum operation on the device. The warmup() kernel is used to warm up the GPU, and the readOffset() kernel is used to measure the performance impact of misaligned reads.
+10. It copies the results back from the device to the host using cudaMemcpy().
+11. It checks if the results obtained from the device match the results obtained from the host using checkResult().
+12. Finally, it frees the allocated memory on both the host and the device using free() and cudaFree(), and resets the device using cudaDeviceReset().
+
+The offset parameter, which can be passed as a command-line argument, is used to force misaligned reads. Misaligned reads can occur when the starting address of the data being read is not evenly divisible by the size of the data type. This can lead to performance degradation because the GPU has to perform extra memory transactions to gather the misaligned data.
+
+## Profiler
 **GPU activities:**
 - 49.71% of the GPU’s time was spent on copying memory from the device to the host ([CUDA memcpy DtoH]). The total time spent on this operation was 992.10us.
 - 45.41% of the time was spent on copying memory from the host to the device ([CUDA memcpy HtoD]). The total time spent on this operation was 906.47us.
@@ -38,6 +83,23 @@ Other API calls like cudaFree, cudaSetDevice, and cudaGetDeviceProperties also a
 - cudaFreeHost and cudaFree: These functions are used to free the pinned memory allocated on the host and the device memory respectively. They took up 0.13% and 0.04% of the total API call time, amounting to 833.20us and 261.00us respectively.
 
 # readSegmentUnroll.cu
+## Code
+1. It first sets up the CUDA device with cudaSetDevice(dev).
+2. It then defines the size of the memory to be allocated on both the host and the device. The size is determined by nElem, which is set to 1 << power (equivalent to 2 raised to the power of power), and nBytes, which is the total size in bytes (obtained by multiplying nElem by the size of a float).
+3. It retrieves and prints the properties of the CUDA device using cudaGetDeviceProperties().
+4. It allocates memory on the host (CPU) using malloc().
+5. It initializes the host memory with random values using initialData().
+6. It performs a sum operation on the host using sumArraysOnHost().
+7. It allocates memory on the device (GPU) using cudaMalloc().
+8. It copies data from the host to the device using cudaMemcpy().
+9. It launches four kernels, warmup(), readOffset(), readOffsetUnroll2(), and readOffsetUnroll4(), which perform the same sum operation on the device. The warmup() kernel is used to warm up the GPU, the readOffset() kernel is used to measure the performance impact of misaligned reads, and the readOffsetUnroll2() and readOffsetUnroll4() kernels use loop unrolling to reduce the performance impact of misaligned reads.
+10. It copies the results back from the device to the host using cudaMemcpy().
+11. It checks if the results obtained from the device match the results obtained from the host using checkResult().
+12. Finally, it frees the allocated memory on both the host and the device using free() and cudaFree(), and resets the device using cudaDeviceReset().
+    
+The offset parameter, which can be passed as a command-line argument, is used to force misaligned reads. Misaligned reads can occur when the starting address of the data being read is not evenly divisible by the size of the data type. This can lead to performance degradation because the GPU has to perform extra memory transactions to gather the misaligned data. Loop unrolling is a technique that can help mitigate this performance impact by allowing the GPU to coalesce multiple misaligned reads into a single aligned read.
+
+## Profiler
 **GPU activities:**
 - 64.13% of the GPU’s time was spent on copying memory from the device to the host ([CUDA memcpy DtoH]). The total time spent on this operation was 2.0672ms.
 - 27.79% of the time was spent on copying memory from the host to the device ([CUDA memcpy HtoD]). The total time spent on this operation was 895.65us.
@@ -56,6 +118,25 @@ Other API calls like cudaFree, cudaSetDevice, and cudaGetDeviceProperties also a
 - cudaFree: This function is used to free the device memory. It took up 0.12% of the total API call time, amounting to 749.60us.
 
 # simpleMathAoS.cu
+## Code
+This CUDA program demonstrates the impact of misaligned reads on performance by forcing misaligned reads to occur on a float*. It also includes kernels that reduce the performance impact of misaligned reads via unrolling. Here’s a step-by-step explanation:
+
+1. It first sets up the CUDA device with cudaSetDevice(dev).
+2. It then defines the size of the memory to be allocated on both the host and the device. The size is determined by nElem, which is set to LEN.
+3. It retrieves and prints the properties of the CUDA device using cudaGetDeviceProperties().
+4. It allocates memory on the host (CPU) using malloc().
+5. It initializes the host memory with random values using initialInnerStruct().
+6. It performs a sum operation on the host using sumArraysOnHost().
+7. It allocates memory on the device (GPU) using cudaMalloc().
+8. It copies data from the host to the device using cudaMemcpy().
+9. It launches four kernels, warmup(), readOffset(), readOffsetUnroll2(), and readOffsetUnroll4(), which perform the same sum operation on the device. The warmup() kernel is used to warm up the GPU, the readOffset() kernel is used to measure the performance impact of misaligned reads, and the readOffsetUnroll2() and readOffsetUnroll4() kernels use loop unrolling to reduce the performance impact of misaligned reads.
+10. It copies the results back from the device to the host using cudaMemcpy().
+11. It checks if the results obtained from the device match the results obtained from the host using checkInnerStruct().
+12. Finally, it frees the allocated memory on both the host and the device using free() and cudaFree(), and resets the device using cudaDeviceReset().
+
+The offset parameter, which can be passed as a command-line argument, is used to force misaligned reads. Misaligned reads can occur when the starting address of the data being read is not evenly divisible by the size of the data type. This can lead to performance degradation because the GPU has to perform extra memory transactions to gather the misaligned data. Loop unrolling is a technique that can help mitigate this performance impact by allowing the GPU to coalesce multiple misaligned reads into a single aligned read.
+
+## Profiler
 **GPU Activities:**
 Memory Transfers: The GPU spends most of its time transferring data. This includes:
 - 80.19% of the GPU’s time was spent on copying memory from the device to the host ([CUDA memcpy DtoH]). The total time spent on this operation was 23.304ms.
@@ -72,6 +153,22 @@ Memory Transfers: The GPU spends most of its time transferring data. This includ
 - cudaFree: This function is used to free the device memory. It took up 0.19% of the total API call time, amounting to 1.2200ms.
 
 # simpleMathSoA.cu
+## Code
+This CUDA program demonstrates the use of structures in GPU programming. Here’s a step-by-step explanation:
+
+1. It first sets up the CUDA device with cudaSetDevice(dev).
+2. It then defines the size of the memory to be allocated on both the host and the device. The size is determined by nElem, which is set to LEN.
+3. It retrieves and prints the properties of the CUDA device using cudaGetDeviceProperties().
+4. It allocates memory on the host (CPU) using malloc().
+5. It initializes the host memory with random values using initialInnerArray().
+6. It performs a sum operation on the host using testInnerArrayHost().
+7. It allocates memory on the device (GPU) using cudaMalloc().
+8. It copies data from the host to the device using cudaMemcpy().
+9. It launches two kernels, warmup2() and testInnerArray(), which perform the same sum operation on the device. The warmup2() kernel is used to warm up the GPU, and the testInnerArray() kernel is used to measure the performance impact of misaligned reads.
+10. It copies the results back from the device to the host using cudaMemcpy().
+11. It checks if the results obtained from the device match the results obtained from the host using checkInnerArray().
+
+## Profiler
 **GPU activities:**
 - 73.35% of the GPU’s time was spent on copying memory from the device to the host ([CUDA memcpy DtoH]). The total time spent on this operation was 12.215ms.
 - 23.58% of the time was spent on copying memory from the host to the device ([CUDA memcpy HtoD]). The total time spent on this operation was 3.9265ms.
@@ -84,6 +181,27 @@ Memory Transfers: The GPU spends most of its time transferring data. This includ
 - cudaFree: This function is used to free the device memory. It took up 0.15% of the total API call time, amounting to 981.80us.
 
 # sumArrayZerocpy.cu
+## Code
+This CUDA program demonstrates the use of zero-copy memory in GPU programming. Here’s a step-by-step explanation:
+
+1. It first sets up the CUDA device with cudaSetDevice(dev).
+2. It then defines the size of the memory to be allocated on both the host and the device. The size is determined by nElem, which is set to LEN.
+3. It retrieves and prints the properties of the CUDA device using cudaGetDeviceProperties().
+4. It allocates memory on the host (CPU) using malloc().
+5. It initializes the host memory with random values using initialData().
+6. It performs a sum operation on the host using sumArraysOnHost().
+7. It allocates memory on the device (GPU) using cudaMalloc().
+8. It copies data from the host to the device using cudaMemcpy().
+9. It launches two kernels, warmup() and sumArrays(), which perform the same sum operation on the device.
+10. It copies the results back from the device to the host using cudaMemcpy().
+11. It checks if the results obtained from the device match the results obtained from the host using checkResult().
+12. It frees the allocated memory on both the host and the device using free() and cudaFree().
+13. It allocates zero-copy memory on the host using cudaHostAlloc().
+14. It initializes the host memory with random values using initialData().
+15. It gets device pointers to the host memory using cudaHostGetDevicePointer().
+16. It launches the sumArraysZeroCopy() kernel, which performs the sum operation on the device using the zero-copy memory.
+
+## Profiler
 **GPU activities:**
 - 33.33% of the GPU’s time was spent on the sumArraysZeroCopy kernel. The total time spent on this operation was 3.5200us.
 - 22.73% of the time was spent on copying memory from the device to the host ([CUDA memcpy DtoH]). The total time spent on this operation was 2.4000us.
@@ -96,6 +214,20 @@ Memory Transfers: The GPU spends most of its time transferring data. This includ
 - cudaMemcpy: This function is used for memory transfers between host and device. It took up 0.06% of the total API call time, amounting to 358.00us.
 
 # sumMatrixGPUManaged.cu
+## Code
+This CUDA program demonstrates the use of unified memory in GPU programming. Here’s a step-by-step explanation:
+
+1. It first sets up the CUDA device with cudaSetDevice(dev).
+2. It then defines the size of the memory to be allocated on both the host and the device. The size is determined by nElem, which is set to LEN.
+3. It retrieves and prints the properties of the CUDA device using cudaGetDeviceProperties().
+4. It allocates unified memory on the host using cudaMallocManaged().
+5. It initializes the host memory with random values using initialData().
+6. It performs a sum operation on the host using sumMatrixOnHost().
+7. It launches two kernels, warmup() and sumMatrixGPU(), which perform the same sum operation on the device. The warmup() kernel is used to warm up the GPU, and the sumMatrixGPU() kernel is used to measure the performance impact of misaligned reads.
+8. It checks if the results obtained from the device match the results obtained from the host using checkResult().
+9. It frees the allocated memory on both the host and the device using cudaFree(), and resets the device using cudaDeviceReset().
+
+## Profiler
 **GPU activities:**
 - 100.00% of the GPU’s time was spent on the sumMatrixGPU kernel. The total time spent on this operation was 12.948ms.
 
@@ -106,6 +238,23 @@ Memory Transfers: The GPU spends most of its time transferring data. This includ
 - cudaDeviceSynchronize: This function is used to synchronize all preceding commands in default command queue of the device. It took up 1.52% of the total API call time, amounting to 13.583ms.
 
 # sumMatrixGPUManual.cu
+## Code
+This CUDA program demonstrates the use of 2D grids and blocks to perform matrix addition on the GPU. Here’s a step-by-step explanation:
+
+1. It first sets up the CUDA device with cudaSetDevice(dev).
+2. It then defines the size of the memory to be allocated on both the host and the device. The size is determined by nElem, which is set to LEN.
+3. It retrieves and prints the properties of the CUDA device using cudaGetDeviceProperties().
+4. It allocates memory on the host (CPU) using malloc().
+5. It initializes the host memory with random values using initialData().
+6. It performs a sum operation on the host using sumMatrixOnHost().
+7. It allocates memory on the device (GPU) using cudaMalloc().
+8. It copies data from the host to the device using cudaMemcpy().
+9. It launches the sumMatrixGPU() kernel, which performs the sum operation on the device.
+10. It copies the results back from the device to the host using cudaMemcpy().
+11. It checks if the results obtained from the device match the results obtained from the host using checkResult().
+12. It frees the allocated memory on both the host and the device using cudaFree(), and resets the device using cudaDeviceReset().
+
+## Profiler
 **GPU activities:**
 - 65.52% of the GPU’s time was spent on copying memory from the device to the host ([CUDA memcpy HtoD]). The total time spent on this operation was 27.101ms.
 - 30.63% of the time was spent on copying memory from the host to the device ([CUDA memcpy DtoH]). The total time spent on this operation was 12.669ms.
@@ -117,6 +266,9 @@ Memory Transfers: The GPU spends most of its time transferring data. This includ
 - cudaMemcpy: This function is used for memory transfers between host and device. It took up 6.50% of the total API call time, amounting to 45.038ms.
 
 # transpose.cu
+## Code
+
+## Profiler
 **GPU activities:**
 - 86.82% of the GPU’s time was spent on copying memory from the device to the host ([CUDA memcpy HtoD]). The total time spent on this operation was 1.9853ms.
 - 6.62% of the time was spent on the copyRow kernel. The total time spent on this operation was 151.49us.
@@ -128,6 +280,23 @@ Memory Transfers: The GPU spends most of its time transferring data. This includ
 - cudaMemcpy: This function is used for memory transfers between host and device. It took up 6.50% of the total API call time, amounting to 45.038ms.
 
 # writeSegment.cu
+## Code
+This CUDA program demonstrates the use of offset in GPU programming with loop unrolling. Here’s a step-by-step explanation:
+
+1. It first sets up the CUDA device with cudaSetDevice(dev).
+2. It then defines the size of the memory to be allocated on both the host and the device. The size is determined by nElem, which is set to 1 << 20.
+3. It retrieves and prints the properties of the CUDA device using cudaGetDeviceProperties().
+4. It allocates memory on the host (CPU) using malloc().
+5. It initializes the host memory with random values using initialData().
+6. It performs a sum operation on the host using sumMatrixOnHost().
+7. It allocates memory on the device (GPU) using cudaMalloc().
+8. It copies data from the host to the device using cudaMemcpy().
+9. It launches the warmup() kernel, which performs the sum operation on the device.
+10. It checks if the results obtained from the device match the results obtained from the host using checkResult().
+11. It launches the writeOffset(), writeOffsetUnroll2(), and writeOffsetUnroll4() kernels, which perform the sum operation on the device with different degrees of loop unrolling.
+12. It frees the allocated memory on both the host and the device using cudaFree(), and resets the device using cudaDeviceReset().
+
+## Profiler
 **GPU activities:**
 - 65.98% of the GPU’s time was spent on copying memory from the device to the host ([CUDA memcpy DtoH]). The total time spent on this operation was 2.1129ms.
 - 29.36% of the time was spent on copying memory from the host to the device ([CUDA memcpy HtoD]). The total time spent on this operation was 940.23us.
