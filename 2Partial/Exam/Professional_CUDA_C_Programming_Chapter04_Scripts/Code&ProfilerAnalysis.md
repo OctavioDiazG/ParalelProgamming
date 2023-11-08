@@ -308,6 +308,42 @@ This CUDA program demonstrates the use of offset in GPU programming with loop un
 - cudaMemcpy: This function is used for memory transfers between host and device. It took up 0.83% of the total API call time, amounting to 5.1802ms.
 
 
+# What does What?
+- [CUDA memcpy HtoD]: This is a CUDA operation that copies data from the host (CPU) to the device (GPU). The “HtoD” stands for “Host to Device”. It’s used to transfer data that your GPU will need to perform computations.
+
+- [CUDA memcpy DtoH]: This is the opposite of “HtoD”. It copies data from the device (GPU) back to the host (CPU). The “DtoH” stands for “Device to Host”. It’s used to retrieve the results of computations performed on the GPU.
+
+- cudaMalloc: This function is used to allocate memory on the GPU. It’s similar to the malloc function in C for memory allocation on the CPU, but cudaMalloc allocates memory on the device (GPU) instead.
+
+- cudaDeviceReset: This function is used to clean up all resources associated with the current device for the current process. It destroys the CUDA context on the device, which means that all device allocations are removed.
+
+- cudaMemcpy: This function is used to copy data between the host and device. It can copy data from host to device, device to host, or even from one location on the device to another.
+
+- cuDeviceGetPCIBusId: This function is used to get the PCI Bus ID for a specific device. The PCI Bus ID is a unique identifier for each device connected to the PCI bus in your system.
+
+- cudaFree: This function is used to deallocate memory that was previously allocated on the GPU using cudaMalloc. It’s important to note that cudaFree is synchronous, meaning it will block the CPU until the operation is complete.
+
+- cuDeviceGetAttribute: This function is used to get the value of a specific attribute from a device. The attribute can be things like the maximum number of threads per block, the number of multiprocessors, etc.
+
+- cudaSetDevice: This function is used to set the device (i.e., the GPU) that will be used for subsequent CUDA operations. If a device has already been initialized, this function will fail.
+
+- cudaGetDeviceProperties: This function is used to get the properties of a specific device. The properties include things like the total amount of memory, the device name, the compute capability, and so on.
+
+- cuDeviceGetCount: This function returns the number of CUDA-capable devices that are available. If no such device is available, cuDeviceGetCount returns 0.
+
+- cuDeviceGet: This function returns a handle to a device. The handle can then be used in subsequent CUDA operations.
+
+- cuDeviceGetName: This function returns the name of a device. This can be useful for identifying the specific GPU model.
+
+- cuDeviceTotalMem: This function returns the total amount of memory available on a device.
+
+- cuDeviceGetUuid: This function returns the UUID of a device. This can be useful for uniquely identifying a GPU.
+
+- cudaLaunchKernel: This function is used to launch a CUDA kernel, which is code that runs on a GPU device. It’s invoked for every operation done with CUDA. The function takes parameters such as the kernel function to be launched, the dimensions of the grid and blocks, shared memory size, and a stream identifier.
+
+- cudaDeviceSynchronize: This function blocks the CPU until all previously issued commands in the CUDA device have been completed. It’s often used to synchronize the CPU and GPU, especially after launching a kernel to ensure it has finished executing before the CPU continues.
+
+- cudaGetLastError: This function returns the last error that has been produced by any of the runtime calls in the same host thread and resets it to cudaSuccess. It’s often used to check for errors after launching a kernel.
 
 # Explanations
 
