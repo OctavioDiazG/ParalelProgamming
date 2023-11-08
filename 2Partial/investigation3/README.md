@@ -221,7 +221,123 @@ The CUDA execution model on GPU devices has two key features: threads are execut
 
 ## Further Chapter 4 Explanation
 
-**Coming Soon!!!** 
+### 4.1.1 Benefits of a Memory Hierarchy
+A memory hierarchy in modern computers consists of multiple levels of memory with different latencies, bandwidths, and capacities. The memory hierarchy is designed to optimize performance by utilizing the principle of locality. The benefits of a memory hierarchy include lower cost per bit, higher capacity, and the ability to store data that is less frequently accessed by the processor. This hierarchy allows for the efficient use of memory resources and can provide the illusion of large but low-latency memory.
+
+### 4.1.2 CUDA Memory Model
+The CUDA memory model is designed to provide programmers with more control over data movement and placement, allowing for more aggressive optimizations and higher peak performance. It exposes the programmer to the GPU memory hierarchy, which includes various types of programmable and non-programmable memory.
+
+**Programmable Memory** <br>
+Programmable memory in the CUDA memory model includes registers, shared memory, local memory, constant memory, texture memory, and global memory. Each type of memory has a different scope, lifetime, and caching behavior. For example, registers are private to each thread in a kernel, while shared memory is visible to all threads in a thread block.
+
+**Non-programmable Memory** <br>
+Non-programmable memory in the CUDA memory model includes L1 cache and L2 cache. These memory spaces are not directly controlled by the programmer and rely on automatic techniques for data placement and caching.
+
+**Memory Management** <br>
+To achieve maximum performance, CUDA provides functions for allocating and deallocating device memory, as well as transferring data between the host and device. Manual data movement is still required in most applications, although NVIDIA is working towards unifying the host and device memory space with each CUDA release.
+
+**Memory Access Patterns** <br>
+Efficiently accessing global memory is crucial for optimizing performance in CUDA applications. Different global memory access patterns can have a significant impact on performance. It is important to consider factors such as aligned and coalesced access, as well as the use of shared memory to reduce global memory access.
+
+**Global Memory** <br>
+Global memory is the largest and most commonly used memory in CUDA. It has high latency and can be accessed through 32-byte or 128-byte transactions. Understanding the characteristics and granularities of global memory is important for optimizing its usage in applications.
+
+### 4.2.1 Memory Allocation and Deallocation
+The CUDA programming model assumes a heterogeneous system with a host and a device, each having its own separate memory space. Kernel functions operate in the device memory space, and the CUDA runtime provides functions to allocate and deallocate device memory.
+
+You can allocate global memory on the host using the ```cudaMalloc``` function. This function allocates a specified number of bytes of global memory on the device and returns the location of that memory in a pointer. The allocated memory is suitably aligned for any variable type.
+
+To initialize the allocated global memory, you can use the ```cudaMemset``` function. This function fills a specified number of bytes starting at a device memory address with a specified value.
+
+Once an application is no longer using a piece of allocated global memory, it can be deallocated using the ```cudaFree``` function. This function frees the global memory pointed to by a pointer, which must have been previously allocated using a device allocation function.
+
+Device memory allocation and deallocation are expensive operations, so it is recommended to reuse device memory whenever possible to minimize the impact on overall performance.
+
+### 4.2.2 Memory Transfer
+In CUDA programming, once global memory is allocated, data can be transferred between the host and the device using the ```cudaMemcpy``` function. This function copies a specified number of bytes from the source memory location to the destination memory location. The direction of the copy is determined by the ```cudaMemcpyKind``` parameter, which can have values such as ```cudaMemcpyHostToDevice``` and ```cudaMemcpyDeviceToHost```. 
+
+It's important to ensure that the pointers for the source and destination memory locations match the specified copy direction. The ```cudaMemcpy``` function exhibits synchronous behavior in most cases. An example of using ```cudaMemcpy``` for memory transfer is shown in Listing 4-2, where data is transferred back and forth between the host and the device.
+
+### 4.2.3 Pinned Memory
+By default, allocated host memory is pageable, which means that it can be subject to page fault operations that move data in host virtual memory to different physical locations as directed by the operating system.
+
+**Key points**
+- Pageable host memory is subject to page fault operations that can move data in host virtual memory.
+- The CUDA driver first allocates temporary page-locked or pinned host memory when transferring data from pageable host memory to device memory.
+- Pinned host memory, on the other hand, is page-locked and accessible directly by the device, providing higher transfer throughput for large data transfers.
+- However, allocating excessive amounts of pinned memory can degrade host system performance by reducing the amount of pageable memory available for storing virtual memory data.
+
+### 4.2.4 Zero-Copy Memory
+Zero-copy memory is a memory management technique in CUDA that allows data to be shared between the host and device without the need for explicit data transfers. It is particularly useful in integrated architectures where CPUs and GPUs share main memory. Zero-copy memory simplifies programming and offers reasonable performance for small amounts of data. However, for larger datasets with discrete GPUs connected via the PCIe bus, zero-copy memory can cause significant performance degradation.
+
+**Key points**
+- Zero-copy memory allows data to be shared between the host and device without explicit data transfers.
+- It is beneficial in integrated architectures where CPUs and GPUs share main memory.
+- Zero-copy memory simplifies programming and offers reasonable performance for small amounts of data.
+- For larger datasets with discrete GPUs connected via the PCIe bus, zero-copy memory can cause significant performance degradation.
+
+### 4.2.5 Unified Virtual Addressing
+Unified Virtual Addressing (UVA) is a special addressing mode introduced in CUDA 4.0. It allows host memory and device memory to share a single virtual address space. Prior to UVA, developers had to manage pointers to host memory and device memory separately. With UVA, the memory space referenced by a pointer becomes transparent to application code. This simplifies memory management and allows for easier passing of pointers to kernel functions. UVA is supported on 64-bit Linux systems.
+
+### 4.2.6 Unified Memory
+Unified Memory is a feature introduced in CUDA 6.0 that simplifies memory management in the CUDA programming model. It creates a pool of managed memory where allocations are accessible on both the CPU and GPU with the same memory address. The underlying system automatically migrates data between the host and device, making data movement transparent to the application.
+
+**Key points**
+- Unified Memory eliminates the need for explicit data transfers between the host and device.
+- It relies on Unified Virtual Addressing (UVA) support to provide a single virtual memory address space for all processors.
+- Unified Memory offers a "single-pointer-to-data" model, similar to zero-copy memory, but with improved performance.
+- It simplifies CUDA programming by automatically managing memory allocations and data movement.
+- Future hardware and software enhancements are expected to further improve Unified Memory performance.
+
+### 4.3.1 Aligned and Coalesced Access
+Aligned and coalesced memory accesses are important for maximizing global memory throughput in GPU applications. Aligned memory accesses occur when the first address of a device memory transaction is an even multiple of the cache granularity being used (either 32 bytes for L2 cache or 128 bytes for L1 cache). Coalesced memory accesses occur when all threads in a warp access a contiguous chunk of memory. Aligned coalesced memory accesses are ideal, as they allow for efficient use of memory bandwidth. To achieve optimal global memory access, it is important to organize memory operations to be both aligned and coalesced.
+
+### 4.3.2 Global Mamory Reads
+Global memory reads in CUDA involve accessing data from the global memory of the GPU. This chapter discusses the optimization of global memory accesses to improve performance.
+
+**Key points**
+- Global memory reads can be pipelined through different cache/buffer paths, including L1/L2 cache, constant cache, and read-only cache.
+- The L1 cache can be enabled or disabled depending on the device compute capability and compiler options.
+- Aligned and coalesced memory accesses are important for reducing wasted bandwidth and improving throughput efficiency.
+- The number of transactions required for a memory request depends on the distribution and alignment of memory addresses.
+- GPU caches, including L1 and L2 caches, are used to store data in local and global memory, improving read performance.
+- The CUDA memory model allows explicit control over data placement for optimal performance.
+
+### 4.3.3 Global Memory Writes
+Global memory writes in CUDA refer to the process of storing data from the device to the global memory. It is important to optimize global memory writes to improve performance and efficiency in GPU computing.
+
+**Key points**
+- Aligned and coalesced memory accesses are crucial for efficient global memory writes. This means that memory accesses should be aligned to the size of the memory transaction and should be consecutive.
+- Misaligned memory writes can lead to reduced performance and wasted bandwidth.
+- The number of transactions required to satisfy a memory write request depends on the distribution of memory addresses across threads and the alignment of memory addresses per transaction.
+- The CUDA memory model unifies host and device memory systems, allowing explicit control over data placement for optimal performance.
+- GPU caches, such as L1 and L2 caches, are used to store data in local and global memory, including register spills, and can improve memory access efficiency.
+- Unified Memory in CUDA simplifies programming by eliminating the need for explicit data transfers between the host and device, maintaining coherency between them.
+- Optimizing memory transactions and maximizing global memory throughput efficiency are important for achieving optimal performance in GPU computing.
+
+### 4.3.4 Array of Structures Versus Structures of Arrays
+The document discusses two ways of organizing data: Array of Structures (AoS) and Structure of Arrays (SoA). In the AoS approach, data elements are stored in a structure and then organized in an array. This approach is beneficial for cache locality on the CPU as related data is stored close together. On the other hand, the SoA approach separates the values of each field into their own arrays. This allows for storing data for neighboring data points together, but a single data point is spread across multiple arrays. The choice between AoS and SoA depends on the specific requirements and performance considerations.
+
+### 4.3.5 Performace tuning
+Performance tuning is an important aspect of optimizing kernel performance in CUDA programming. It involves finding a good balance among various metrics and events to achieve the best overall performance. No single metric can prescribe optimal performance, and the choice of metric depends on the nature of the kernel code. Understanding hardware resources and the nature of warp execution is crucial for improving kernel performance. Profiling tools like nvprof can provide deep insights into kernel performance and help identify bottlenecks.
+
+**Key points**
+- Performance tuning requires finding a balance among related metrics and events.
+- No single metric can prescribe optimal performance, and it depends on the nature of the kernel code.
+- Understanding hardware resources is important for improving kernel performance.
+- Profiling tools like nvprof provide insights into kernel performance and help identify bottlenecks.
+
+### 4.4.1 Memory Bandwidth
+Memory bandwidth is an important factor in kernel performance. It refers to the rate at which device memory can be accessed by a streaming multiprocessor (SM), measured in bytes per time unit. There are two types of memory bandwidth: theoretical bandwidth and effective bandwidth. Theoretical bandwidth is the maximum achievable bandwidth with the hardware, while effective bandwidth is the measured bandwidth that a kernel actually achieves. Memory bandwidth can be affected by how data in global memory is arranged and accessed by a warp.
+
+**Key points**
+- Memory bandwidth is the rate at which device memory can be accessed by an SM.
+- Theoretical bandwidth is the maximum achievable bandwidth with the hardware.
+- Effective bandwidth is the measured bandwidth that a kernel actually achieves.
+- Memory bandwidth can be affected by data arrangement and warp access patterns in global memory.
+
+### 4.4.2 Matrix Transpose Problem
+The matrix transpose is a fundamental problem in linear algebra, where each row of a matrix is exchanged with its corresponding column. This operation is commonly used in various applications. The given document provides an example of a host-based implementation of an out-of-place transpose algorithm using single-precision floating-point values. The transpose is calculated by transforming array index values to reverse row and column coordinates. The document also discusses the data layout of the original matrix and the transposed matrix, highlighting the access patterns for reads and writes. Additionally, it explores the impact of enabling or disabling L1 cache on the performance of transpose kernels. The document presents different kernel implementations and their effective bandwidths, comparing their performance to upper and lower bounds. It concludes that the Unroll4Col kernel demonstrates the best performance, achieving an effective bandwidth of 60 to 80 percent of the peak bandwidth
 
 ## References 
 
