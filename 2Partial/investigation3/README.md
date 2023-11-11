@@ -339,6 +339,39 @@ Memory bandwidth is an important factor in kernel performance. It refers to the 
 ### 4.4.2 Matrix Transpose Problem
 The matrix transpose is a fundamental problem in linear algebra, where each row of a matrix is exchanged with its corresponding column. This operation is commonly used in various applications. The given document provides an example of a host-based implementation of an out-of-place transpose algorithm using single-precision floating-point values. The transpose is calculated by transforming array index values to reverse row and column coordinates. The document also discusses the data layout of the original matrix and the transposed matrix, highlighting the access patterns for reads and writes. Additionally, it explores the impact of enabling or disabling L1 cache on the performance of transpose kernels. The document presents different kernel implementations and their effective bandwidths, comparing their performance to upper and lower bounds. It concludes that the Unroll4Col kernel demonstrates the best performance, achieving an effective bandwidth of 60 to 80 percent of the peak bandwidth
 
+
+## Reflexion
+### Chapter 3: CUDA Execution Model
+
+In Chapter 3, the focus is on developing kernels with a profile-driven approach and understanding the nature of warp execution. It explains how to expose more parallelism to the GPU and master grid and block configuration heuristics. The chapter also covers various CUDA performance metrics and events, as well as dynamic parallelism and nested execution.
+
+The chapter provides guidelines for selecting grid and block configurations, helping to optimize kernel performance. It emphasizes the importance of understanding hardware resources and the GPU architecture to write better code and fully exploit the device's capability. The chapter also delves into the concept of warp execution and how threads are grouped into warps.
+
+### Chapter 4: Global Memory
+
+Chapter 4 focuses on the CUDA memory model and programming with global memory. It explores global memory access patterns and the impact of memory efficiency on kernel performance. The chapter provides guidelines for improving bandwidth utilization and maximizing the utilization of bytes traveling between global memory and on-chip memory.
+
+The chapter discusses the importance of aligned and coalesced memory accesses and provides techniques for achieving them. It also introduces Unified Memory, which simplifies CUDA programming by eliminating duplicate pointers and the need for explicit data transfer between the host and device.
+
+### Opinion and Conclusion
+
+In my opinion, Chapters 3 and 4 provide valuable insights into optimizing CUDA kernel performance. 
+
+Chapter 3 highlights the importance of understanding the hardware perspective and provides guidelines for selecting grid and block configurations. It also sheds light on the nature of warp execution and how it impacts kernel design.
+
+Chapter 4 delves into the intricacies of global memory and its impact on kernel performance. It emphasizes the importance of memory efficiency, aligned and coalesced memory accesses, and maximizing bandwidth utilization. The introduction of Unified Memory simplifies programming and eliminates the need for explicit data transfer.
+
+Parallelism and Performance: The execution model allows threads to be executed in warps, maximizing parallelism and performance. This SIMT (Single Instruction, Multiple Threads) fashion enables efficient utilization of hardware resources, leading to faster execution of kernels.
+
+Hardware Perspective: The execution model exposes the hardware perspective, allowing developers to understand the underlying architecture and optimize their code accordingly. By considering hardware resources, cache characteristics, and memory access patterns, developers can write more efficient code and fully exploit the capabilities of the GPU.
+
+Profile-Driven Approach: CUDA programming encourages a profile-driven approach, where developers analyze the performance of their code using profiling tools like nvprof. This approach helps identify performance bottlenecks, understand kernel behavior, and guide optimization efforts, resulting in improved performance.
+
+Dynamic Parallelism: The introduction of dynamic parallelism in CUDA enables the creation of new work directly from the device. This feature allows for the expression of recursive or data-dependent parallel algorithms in a more natural and easy-to-understand way, enhancing code flexibility and maintainability.
+
+Overall, By understanding the CUDA execution model and global memory concepts, I can apply optimization techniques to improve performance in both code and real-life applications. Whether it's optimizing algorithms, improving data access patterns, or maximizing resource utilization, the knowledge gained from these chapters can be valuable in various domains where optimization is key.
+
+
 ## References 
 
 [1] J. Cheng, M. Grossman, and T. McKercher, Professional Cuda C Programming. Indianapolis (Ind.): Wrox, 2014. 
