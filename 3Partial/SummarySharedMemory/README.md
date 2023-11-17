@@ -48,6 +48,7 @@ In summary, accessing a square shared memory array in row-major order generally 
 
 ### 1.1.2 **Writing Row-Major and Reading Column-Major:** <br>
 In the case of square shared memory, writing in row-major order means that each thread in a warp writes its global thread index to consecutive locations in the shared memory array along the innermost dimension. This allows for consecutive memory accesses and avoids bank conflicts. On the other hand, reading in column-major order means that each thread in a warp reads values from consecutive locations in the shared memory array along the outermost dimension. This can result in bank conflicts, as neighboring threads access neighboring array cells along the outermost dimension.
+
 ![WritingRowMajorandReadingColumnMajor](WritingRowMajorandReadingColumnMajor.png)
 
 ### 1.1.3 **Dynamic Shared Memory:** <br>
@@ -58,6 +59,7 @@ In square shared memory, padding is used to avoid bank conflicts. To pad statica
 
 ### 1.1.5 **Padding Dynamically Declared Shared Memory:** <br>
 In the case of padding dynamically declared shared memory of square shared memory, one padded memory space is skipped for each row when converting the 2D thread indices to 1D memory indices. This helps in resolving bank conflicts and improves performance by reducing shared memory transactions.
+
 ![PaddingDynamicallyDeclaredSharedMemory](PaddingDynamicallyDeclaredSharedMemory.png)
 
 ### 1.1.6 **Comparing the Performance of the Square Shared Memory Kernels:** <br>
