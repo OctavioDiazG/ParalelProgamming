@@ -1,0 +1,16 @@
+# ninja log v5
+0	3040	7217254394171294	CMakeFiles/ShareMemoryExercise.dir/main.cu.obj	2d32286e26d30b75
+3041	5170	7217254416525450	CMakeFiles/ShareMemoryExercise.dir/cmake_device_link.obj	82c39a43cb0cb8d6
+5170	5539	7217254420255198	ShareMemoryExercise.exe	36af6a574ac31726
+1	2994	7217275052563057	CMakeFiles/ShareMemoryExercise.dir/main.cu.obj	2d32286e26d30b75
+2995	4559	7217275068390384	CMakeFiles/ShareMemoryExercise.dir/cmake_device_link.obj	82c39a43cb0cb8d6
+4560	4767	7217275070066730	ShareMemoryExercise.exe	36af6a574ac31726
+1	2139	7217276679637286	CMakeFiles/ShareMemoryExercise.dir/main.cu.obj	2d32286e26d30b75
+2139	3544	7217276693532830	CMakeFiles/ShareMemoryExercise.dir/cmake_device_link.obj	82c39a43cb0cb8d6
+3545	3758	7217276695327905	ShareMemoryExercise.exe	36af6a574ac31726
+1	2432	7218884935300324	CMakeFiles/ShareMemoryExercise.dir/main.cu.obj	2d32286e26d30b75
+2433	3780	7218884948644843	CMakeFiles/ShareMemoryExercise.dir/cmake_device_link.obj	82c39a43cb0cb8d6
+3780	4087	7218884951119365	ShareMemoryExercise.exe	36af6a574ac31726
+1	2825	7218894971270442	CMakeFiles/ShareMemoryExercise.dir/main.cu.obj	2d32286e26d30b75
+2825	4402	7218894987012200	CMakeFiles/ShareMemoryExercise.dir/cmake_device_link.obj	82c39a43cb0cb8d6
+4402	4595	7218894988828648	ShareMemoryExercise.exe	36af6a574ac31726

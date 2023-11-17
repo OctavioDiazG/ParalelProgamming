@@ -1,0 +1,3 @@
+C:/Users/odiaz/Portafolio/ParallelProgramming/GitRepo/3Partial/ShareMemoryExercise/cmake-build-debug/CMakeFiles/ShareMemoryExercise.dir
+C:/Users/odiaz/Portafolio/ParallelProgramming/GitRepo/3Partial/ShareMemoryExercise/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/odiaz/Portafolio/ParallelProgramming/GitRepo/3Partial/ShareMemoryExercise/cmake-build-debug/CMakeFiles/rebuild_cache.dir
