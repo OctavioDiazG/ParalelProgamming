@@ -1,4 +1,4 @@
-//Be advice there are 3 codes in this .cu each one with the respective title
+//Be advice there are 4 codes in this .cu each one with the respective title
 
 /*
 // Teacher code
@@ -64,6 +64,91 @@ int main() {
 }
 */
 
+//personal 3rd code
+give me a deatiled brake down of this code 
+#include <stdio.h>
+#include <cuda.h>
+#include <curand.h>
+
+#define BLOCK_SIZE 32
+
+__global__ void columnSum(float* array, float* result, int x, int y, int padded_x) {
+    int tid = threadIdx.x;
+    int bid = blockIdx.x;
+    int index = bid * blockDim.x + tid;
+
+    if (index < padded_x) {
+        float sum = 0;
+        for (int i = 0; i < y; ++i) {
+            sum += array[i * padded_x + index];
+        }
+        result[index] = sum;
+    }
+}
+
+int main() {
+    int x = 128; // Number of columns
+    int y = 128; // Number of rows
+
+    // Calculate the padded size
+    int padded_x = (x + BLOCK_SIZE - 1) / BLOCK_SIZE * BLOCK_SIZE;
+
+    float* h_array = (float*)malloc(padded_x * y * sizeof(float));
+    float* h_result = (float*)malloc(padded_x * sizeof(float));
+
+    // Initialize array with random values
+    for (int i = 0; i < y; ++i) {
+        for (int j = 0; j < padded_x; ++j) {
+            if (j < x) {
+                h_array[i * padded_x + j] = rand() / (float)RAND_MAX;
+            } else {
+                h_array[i * padded_x + j] = -1; // Initialize padded elements
+            }
+        }
+    }
+
+    float* d_array;
+    float* d_result;
+
+    // Allocate device memory
+    cudaMalloc((void**)&d_array, padded_x * y * sizeof(float));
+    cudaMalloc((void**)&d_result, padded_x * sizeof(float));
+
+    // Copy array from host to device
+    cudaMemcpy(d_array, h_array, padded_x * y * sizeof(float), cudaMemcpyHostToDevice);
+
+    // Define block and grid dimensions
+    dim3 blockDim(BLOCK_SIZE);
+    dim3 gridDim((padded_x + blockDim.x - 1) / blockDim.x);
+
+    // Launch kernel
+    columnSum<<<gridDim, blockDim>>>(d_array, d_result, x, y, padded_x);
+
+    // Copy result from device to host
+    cudaMemcpy(h_result, d_result, padded_x * sizeof(float), cudaMemcpyDeviceToHost);
+
+    // Print the result
+    for (int i = 0; i < padded_x; ++i) {
+        printf("Column %d: Sum = %f\n", i, h_result[i]);
+    }
+
+    // Free allocated memory
+    free(h_array);
+    free(h_result);
+    cudaFree(d_array);
+    cudaFree(d_result);
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+/*
 // personal 2nd code
 #include <stdio.h>
 #include <cuda.h>
@@ -135,8 +220,7 @@ int main() {
 
     return 0;
 }
-
-
+*/
 
 
 
