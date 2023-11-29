@@ -2,127 +2,112 @@
 
 ```C++
 #include <stdio.h>
-#include <cuda.h>
-#include <curand.h>
+#include <stdlib.h>
+#include <cuda_runtime.h>
 
-#define BLOCK_SIZE 32
+// Define the dimensions of the matrix and the block size for the CUDA kernel
+#define X 5
+#define Y 5
+#define PADDING_SIZE_X 1
+#define BLOCK_SIZE_X 16
+#define BLOCK_SIZE_Y 16
 
-__global__ void columnSum(float* array, float* result, int x, int y, int padded_x) {
-    int tid = threadIdx.x;
-    int bid = blockIdx.x;
-    int index = bid * blockDim.x + tid;
+// CUDA kernel function to apply padding to the matrix and sum the columns
+__global__ void applyPaddingAndSumColumns(int *matrix, int *paddedMatrix, int *result, int width, int height, int paddingX) {
+    // Calculate the column and row index for the current thread
+    unsigned int col = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned int row = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (index < padded_x) {
-        float sum = 0;
-        for (int i = 0; i < y; ++i) {
-            sum += array[i * padded_x + index];
-        }
-        result[index] = sum;
+    // Check if the thread is within the bounds of the matrix
+    if (col < width && row  < height) {
+        // Apply padding to the matrix
+        paddedMatrix[row * (width + paddingX) + col + paddingX] = matrix[row * width + col];
+        // Sum the columns of the matrix using atomic addition to avoid race conditions
+        atomicAdd(&result[col], matrix[row * width + col]);
     }
 }
 
 int main() {
-    int x = 128; // Number of columns
-    int y = 128; // Number of rows
+    // Declare and initialize the matrix, the padded matrix, and the result array
+    int matrix[X][Y];
+    int paddedMatrix[X + PADDING_SIZE_X][Y];
+    int result[Y] = {0};
 
-    // Calculate the padded size
-    int padded_x = (x + BLOCK_SIZE - 1) / BLOCK_SIZE * BLOCK_SIZE;
-
-    float* h_array = (float*)malloc(padded_x * y * sizeof(float));
-    float* h_result = (float*)malloc(padded_x * sizeof(float));
-
-    // Initialize array with random values
-    for (int i = 0; i < y; ++i) {
-        for (int j = 0; j < padded_x; ++j) {
-            if (j < x) {
-                h_array[i * padded_x + j] = rand() / (float)RAND_MAX;
-            } else {
-                h_array[i * padded_x + j] = -1; // Initialize padded elements
-            }
+    // Fill the matrix with random numbers between 1 and 9
+    for (int i = 0; i < X; ++i) {
+        for (int j = 0; j < Y; ++j) {
+            matrix[i][j] = (rand() % 9)+1;
         }
     }
 
-    float* d_array;
-    float* d_result;
-
-    // Allocate device memory
-    cudaMalloc((void**)&d_array, padded_x * y * sizeof(float));
-    cudaMalloc((void**)&d_result, padded_x * sizeof(float));
-
-    // Copy array from host to device
-    cudaMemcpy(d_array, h_array, padded_x * y * sizeof(float), cudaMemcpyHostToDevice);
-
-    // Define block and grid dimensions
-    dim3 blockDim(BLOCK_SIZE);
-    dim3 gridDim((padded_x + blockDim.x - 1) / blockDim.x);
-
-    // Launch kernel
-    columnSum<<<gridDim, blockDim>>>(d_array, d_result, x, y, padded_x);
-
-    // Copy result from device to host
-    cudaMemcpy(h_result, d_result, padded_x * sizeof(float), cudaMemcpyDeviceToHost);
-
-    // Print the result
-    for (int i = 0; i < padded_x; ++i) {
-        printf("Column %d: Sum = %f\n", i, h_result[i]);
+    // Print the original matrix
+    printf("Original:\n");
+    for (int i = 0; i < X; ++i) {
+        for (int j = 0; j < Y; ++j) {
+            printf("%d\t", matrix[i][j]);
+        }
+        printf("\n");
     }
 
-    // Free allocated memory
-    free(h_array);
-    free(h_result);
-    cudaFree(d_array);
+    // Declare pointers for the device memory
+    int *d_matrix, *d_paddedMatrix, *d_result;
+
+    // Allocate memory on the device for the matrix, the padded matrix, and the result array
+    cudaMalloc((void **)&d_matrix, X * Y * sizeof(int));
+    cudaMalloc((void **)&d_paddedMatrix, (X + PADDING_SIZE_X) * Y * sizeof(int));
+    cudaMalloc((void **)&d_result, Y * sizeof(int));
+
+    // Copy the matrix from host to device
+    cudaMemcpy(d_matrix, matrix, X * Y * sizeof(int), cudaMemcpyHostToDevice);
+
+    // Define the dimensions of the grid and blocks for the CUDA kernel
+    dim3 gridDim((Y + BLOCK_SIZE_X - 1) / BLOCK_SIZE_X, (X + BLOCK_SIZE_Y - 1) / BLOCK_SIZE_Y, 1);
+    dim3 blockDim(BLOCK_SIZE_X, BLOCK_SIZE_Y, 1);
+
+    // Launch the CUDA kernel
+    applyPaddingAndSumColumns<<<gridDim, blockDim>>>(d_matrix, d_paddedMatrix, d_result, Y, X, PADDING_SIZE_X);
+
+    // Copy the padded matrix from device to host
+    cudaMemcpy(paddedMatrix, d_paddedMatrix, (X + PADDING_SIZE_X) * Y * sizeof(int), cudaMemcpyDeviceToHost);
+
+    // Print the padded matrix
+    printf("\nWith Padding:\n");
+    for (int i = 0; i < X + PADDING_SIZE_X; ++i) {
+        for (int j = 0; j < Y ; ++j) {
+            printf("%d\t", paddedMatrix[i][j]);
+        }
+        printf("\n");
+    }
+
+    // Copy the result array from device to host
+    cudaMemcpy(result, d_result, Y * sizeof(int), cudaMemcpyDeviceToHost);
+
+    // Print the column sums
+    printf("\nColumn Sums:\n");
+    for (int j = 0; j < Y; ++j) {
+        printf("%d\t", result[j]);
+    }
+    printf("\n");
+
+    // Free the device memory
+    cudaFree(d_matrix);
+    cudaFree(d_paddedMatrix);
     cudaFree(d_result);
 
     return 0;
 }
+
 ```
 
-This CUDA C code creates a 2D array of size X * Y with random values, pads the array to a size of your choice, and then performs the sum of the values of each column in parallel.
+This code performs two main operations on a 2D matrix:
 
-The main function initializes a 2D array with random values for the original elements and a specific value (-1) for the padded elements. It then allocates memory on the GPU, copies the array from host to device, and launches the ```columnSum``` kernel. After the kernel execution, it copies the result from device to host, prints the sum of each column (including the padded ones), and then frees the allocated memory.
+Padding: The ```applyPaddingAndSumColumns``` kernel function applies padding to the input matrix. It adds a specified number of rows (```PADDING_SIZE_X```) filled with zeros at the top of the matrix. The padded matrix is then printed out.
 
-The ```columnSum``` kernel calculates the sum of each column (including the padded elements) and stores the results in the ```result``` array. Each thread is responsible for summing up the elements of a single column.
+Column Summation: The ```applyPaddingAndSumColumns``` kernel function also calculates the sum of each column in the padded matrix and stores the results in an array. The sums are then printed out.
 
-The size of the array is padded to the nearest multiple of ```BLOCK_SIZE``` (which is 32 in this case) that is greater than or equal to ```x```. This is done to ensure that each warp operates on a contiguous block of memory, which can improve memory access efficiency.
+The ```main``` function initializes the matrices and arrays, allocates memory on the GPU, copies data between the host (CPU) and device (GPU), launches the kernel function, and finally frees the allocated memory.
 
-
-**Kernel Definition:** (```columnSum```): This is a CUDA kernel that operates on a 2D array of floats. It calculates the sum of each column (including the padded elements) and stores the results in the ```result``` array. Each thread is responsible for summing up the elements of a single column.
-
-**Main Function:** The ```main``` function initializes a 2D array with random values for the original elements and a specific value (-1) for the padded elements. It then allocates memory on the GPU, copies the array from host to device, and launches the ```columnSum``` kernel. After the kernel execution, it copies the result from device to host, prints the sum of each column (including the padded ones), and then frees the allocated memory.
-
-**Padding the Array:** The size of the array is padded to the nearest multiple of ```BLOCK_SIZE``` (which is 32 in this case) that is greater than or equal to ```x```. This is done by the following line of code: 
-```C++
-int padded_x = (x + BLOCK_SIZE - 1) / BLOCK_SIZE * BLOCK_SIZE;
-```
-
-**Initializing the Array:** The array is initialized with random values for the original elements and a specific value (-1) for the padded elements. This is done by the following lines of code:
-```C++
-for (int i = 0; i < y; ++i) {
-    for (int j = 0; j < padded_x; ++j) {
-        if (j < x) {
-            h_array[i * padded_x + j] = rand() / (float)RAND_MAX;
-        } else {
-            h_array[i * padded_x + j] = -1; // Initialize padded elements
-        }
-    }
-}
-```
-
-**Allocating Device Memory:** Memory is allocated on the GPU for the array and the result using the ```cudaMalloc``` function.
-
-**Copying Array from Host to Device:** The array is copied from host memory to device memory using the ```cudaMemcpy``` function.
-
-**Defining Block and Grid Dimensions:** The block and grid dimensions are defined using the ```dim3``` data type. The block size is set to ```BLOCK_SIZE```, and the grid size is calculated as the ceiling of the ratio of the padded size of the array to the block size.
-
-**Launching the Kernel:** The ```columnSum``` kernel is launched with the defined grid and block dimensions, and with the array, result, ```x```, ```y```, and ```padded_x``` as arguments.
-
-**Copying Result from Device to Host:** After the kernel execution, the result is copied from device memory to host memory using the ```cudaMemcpy``` function.
-
-**Printing the Result:** The sum of each column (including the padded ones) is printed to the console.
-
-**Freeing Allocated Memory:** The allocated host and device memory is freed using the ```free``` and ```cudaFree``` functions, respectively.
-
-
+The program uses a 2D grid of thread blocks, and each block contains a 2D array of threads. The number of blocks and threads is defined by ```BLOCK_SIZE_X``` and ```BLOCK_SIZE_Y```. The grid and block dimensions are set up such that each thread corresponds to one element in the matrix.
 
 
 
