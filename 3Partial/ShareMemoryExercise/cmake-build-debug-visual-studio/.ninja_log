@@ -1,0 +1,7 @@
+# ninja log v5
+0	2535	7229966189613040	CMakeFiles/ShareMemoryExercise.dir/main.cu.obj	2d32286e26d30b75
+2536	3789	7229966202167189	CMakeFiles/ShareMemoryExercise.dir/cmake_device_link.obj	82c39a43cb0cb8d6
+3789	4059	7229966204868251	ShareMemoryExercise.exe	36af6a574ac31726
+0	1874	7229966621143554	CMakeFiles/ShareMemoryExercise.dir/main.cu.obj	2d32286e26d30b75
+1875	3117	7229966633726715	CMakeFiles/ShareMemoryExercise.dir/cmake_device_link.obj	82c39a43cb0cb8d6
+3117	3277	7229966635145212	ShareMemoryExercise.exe	36af6a574ac31726

@@ -1,294 +1,95 @@
-//Be advice there are 4 codes in this .cu each one with the respective title
-
-/*
-// Teacher code
+#include <stdio.h>
+#include <stdlib.h>
 #include <cuda_runtime.h>
-#include <stdio.h>
 
-#define ARRAY_SIZE 128
-#define BANK_SIZE 32
+// Define the dimensions of the matrix and the block size for the CUDA kernel
+#define X 5
+#define Y 5
+#define PADDING_SIZE_X 1
+#define BLOCK_SIZE_X 16
+#define BLOCK_SIZE_Y 16
 
-__global__ void padArray(int* array) {
-// Shared memory with padding
-    __shared__ int sharedArray[ARRAY_SIZE + ARRAY_SIZE / BANK_SIZE];
+// CUDA kernel function to apply padding to the matrix and sum the columns
+__global__ void applyPaddingAndSumColumns(int *matrix, int *paddedMatrix, int *result, int width, int height, int paddingX) {
+    // Calculate the column and row index for the current thread
+    unsigned int col = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned int row = blockIdx.y * blockDim.y + threadIdx.y;
 
-    int tid = threadIdx.x;
-    int bid = blockIdx.x;
-    int index = bid * blockDim.x + tid;
-
-// Load data into shared memory with padding
-    sharedArray[tid] = array[index];
-    __syncthreads();
-
-// Access all keys from the original bank 0 in one clock pulse
-    int offset = tid / BANK_SIZE;
-    int newIndex = tid + offset;
-
-// Use the modified index for accessing the padded shared memory
-    int result = sharedArray[newIndex];
-
-// Print the result for demonstration
-    printf("Thread %d: Original Value: %d, Padded Value: %d\n", tid, array[index], result);
-}
-
-int main() {
-    int array[ARRAY_SIZE];
-
-// Initialize array values (you can replace this with your data)
-    for (int i = 0; i < ARRAY_SIZE; ++i) {
-        array[i] = i * 2;
-    }
-
-    int* d_array;
-
-// Allocate device memory
-    cudaMalloc((void**)&d_array, ARRAY_SIZE * sizeof(int));
-
-// Copy array from host to device
-    cudaMemcpy(d_array, array, ARRAY_SIZE * sizeof(int), cudaMemcpyHostToDevice);
-
-// Define block and grid dimensions
-    dim3 blockDim(BANK_SIZE);
-    dim3 gridDim((ARRAY_SIZE + blockDim.x - 1) / blockDim.x);
-
-// Launch kernel
-    padArray<<<gridDim, blockDim>>>(d_array);
-
-// Synchronize device to ensure print statements are displayed
-    cudaDeviceSynchronize();
-
-// Free allocated memory
-    cudaFree(d_array);
-
-    return 0;
-}
-*/
-
-//personal 3rd code
-give me a deatiled brake down of this code 
-#include <stdio.h>
-#include <cuda.h>
-#include <curand.h>
-
-#define BLOCK_SIZE 32
-
-__global__ void columnSum(float* array, float* result, int x, int y, int padded_x) {
-    int tid = threadIdx.x;
-    int bid = blockIdx.x;
-    int index = bid * blockDim.x + tid;
-
-    if (index < padded_x) {
-        float sum = 0;
-        for (int i = 0; i < y; ++i) {
-            sum += array[i * padded_x + index];
-        }
-        result[index] = sum;
+    // Check if the thread is within the bounds of the matrix
+    if (col < width && row  < height) {
+        // Apply padding to the matrix
+        paddedMatrix[row * (width + paddingX) + col + paddingX] = matrix[row * width + col];
+        // Sum the columns of the matrix using atomic addition to avoid race conditions
+        atomicAdd(&result[col], matrix[row * width + col]);
     }
 }
 
 int main() {
-    int x = 128; // Number of columns
-    int y = 128; // Number of rows
+    // Declare and initialize the matrix, the padded matrix, and the result array
+    int matrix[X][Y];
+    int paddedMatrix[X + PADDING_SIZE_X][Y];
+    int result[Y] = {0};
 
-    // Calculate the padded size
-    int padded_x = (x + BLOCK_SIZE - 1) / BLOCK_SIZE * BLOCK_SIZE;
-
-    float* h_array = (float*)malloc(padded_x * y * sizeof(float));
-    float* h_result = (float*)malloc(padded_x * sizeof(float));
-
-    // Initialize array with random values
-    for (int i = 0; i < y; ++i) {
-        for (int j = 0; j < padded_x; ++j) {
-            if (j < x) {
-                h_array[i * padded_x + j] = rand() / (float)RAND_MAX;
-            } else {
-                h_array[i * padded_x + j] = -1; // Initialize padded elements
-            }
+    // Fill the matrix with random numbers between 1 and 9
+    for (int i = 0; i < X; ++i) {
+        for (int j = 0; j < Y; ++j) {
+            matrix[i][j] = (rand() % 9)+1;
         }
     }
 
-    float* d_array;
-    float* d_result;
-
-    // Allocate device memory
-    cudaMalloc((void**)&d_array, padded_x * y * sizeof(float));
-    cudaMalloc((void**)&d_result, padded_x * sizeof(float));
-
-    // Copy array from host to device
-    cudaMemcpy(d_array, h_array, padded_x * y * sizeof(float), cudaMemcpyHostToDevice);
-
-    // Define block and grid dimensions
-    dim3 blockDim(BLOCK_SIZE);
-    dim3 gridDim((padded_x + blockDim.x - 1) / blockDim.x);
-
-    // Launch kernel
-    columnSum<<<gridDim, blockDim>>>(d_array, d_result, x, y, padded_x);
-
-    // Copy result from device to host
-    cudaMemcpy(h_result, d_result, padded_x * sizeof(float), cudaMemcpyDeviceToHost);
-
-    // Print the result
-    for (int i = 0; i < padded_x; ++i) {
-        printf("Column %d: Sum = %f\n", i, h_result[i]);
+    // Print the original matrix
+    printf("Original:\n");
+    for (int i = 0; i < X; ++i) {
+        for (int j = 0; j < Y; ++j) {
+            printf("%d\t", matrix[i][j]);
+        }
+        printf("\n");
     }
 
-    // Free allocated memory
-    free(h_array);
-    free(h_result);
-    cudaFree(d_array);
+    // Declare pointers for the device memory
+    int *d_matrix, *d_paddedMatrix, *d_result;
+
+    // Allocate memory on the device for the matrix, the padded matrix, and the result array
+    cudaMalloc((void **)&d_matrix, X * Y * sizeof(int));
+    cudaMalloc((void **)&d_paddedMatrix, (X + PADDING_SIZE_X) * Y * sizeof(int));
+    cudaMalloc((void **)&d_result, Y * sizeof(int));
+
+    // Copy the matrix from host to device
+    cudaMemcpy(d_matrix, matrix, X * Y * sizeof(int), cudaMemcpyHostToDevice);
+
+    // Define the dimensions of the grid and blocks for the CUDA kernel
+    dim3 gridDim((Y + BLOCK_SIZE_X - 1) / BLOCK_SIZE_X, (X + BLOCK_SIZE_Y - 1) / BLOCK_SIZE_Y, 1);
+    dim3 blockDim(BLOCK_SIZE_X, BLOCK_SIZE_Y, 1);
+
+    // Launch the CUDA kernel
+    applyPaddingAndSumColumns<<<gridDim, blockDim>>>(d_matrix, d_paddedMatrix, d_result, Y, X, PADDING_SIZE_X);
+
+    // Copy the padded matrix from device to host
+    cudaMemcpy(paddedMatrix, d_paddedMatrix, (X + PADDING_SIZE_X) * Y * sizeof(int), cudaMemcpyDeviceToHost);
+
+    // Print the padded matrix
+    printf("\nWith Padding:\n");
+    for (int i = 0; i < X + PADDING_SIZE_X; ++i) {
+        for (int j = 0; j < Y ; ++j) {
+            printf("%d\t", paddedMatrix[i][j]);
+        }
+        printf("\n");
+    }
+
+    // Copy the result array from device to host
+    cudaMemcpy(result, d_result, Y * sizeof(int), cudaMemcpyDeviceToHost);
+
+    // Print the column sums
+    printf("\nColumn Sums:\n");
+    for (int j = 0; j < Y; ++j) {
+        printf("%d\t", result[j]);
+    }
+    printf("\n");
+
+    // Free the device memory
+    cudaFree(d_matrix);
+    cudaFree(d_paddedMatrix);
     cudaFree(d_result);
 
     return 0;
 }
-
-
-
-
-
-
-
-
-/*
-// personal 2nd code
-#include <stdio.h>
-#include <cuda.h>
-#include <curand.h>
-
-#define BLOCK_SIZE 32
-
-__global__ void columnSum(float* array, float* result, int x, int y, int padded_x) {
-    int tid = threadIdx.x;
-    int bid = blockIdx.x;
-    int index = bid * blockDim.x + tid;
-
-    if (index < x) {
-        float sum = 0;
-        for (int i = 0; i < y; ++i) {
-            sum += array[i * padded_x + index];
-        }
-        result[index] = sum;
-    }
-}
-
-int main() {
-    int x = 128; // Number of columns
-    int y = 128; // Number of rows
-
-    // Calculate the padded size
-    int padded_x = (x + BLOCK_SIZE - 1) / BLOCK_SIZE * BLOCK_SIZE;
-
-    float* h_array = (float*)malloc(padded_x * y * sizeof(float));
-    float* h_result = (float*)malloc(x * sizeof(float));
-
-    // Initialize array with random values
-    for (int i = 0; i < y; ++i) {
-        for (int j = 0; j < x; ++j) {
-            h_array[i * padded_x + j] = rand() / (float)RAND_MAX;
-        }
-    }
-
-    float* d_array;
-    float* d_result;
-
-    // Allocate device memory
-    cudaMalloc((void**)&d_array, padded_x * y * sizeof(float));
-    cudaMalloc((void**)&d_result, x * sizeof(float));
-
-    // Copy array from host to device
-    cudaMemcpy(d_array, h_array, padded_x * y * sizeof(float), cudaMemcpyHostToDevice);
-
-    // Define block and grid dimensions
-    dim3 blockDim(BLOCK_SIZE);
-    dim3 gridDim((x + blockDim.x - 1) / blockDim.x);
-
-    // Launch kernel
-    columnSum<<<gridDim, blockDim>>>(d_array, d_result, x, y, padded_x);
-
-    // Copy result from device to host
-    cudaMemcpy(h_result, d_result, x * sizeof(float), cudaMemcpyDeviceToHost);
-
-    // Print the result
-    for (int i = 0; i < x; ++i) {
-        printf("Column %d: Sum = %f\n", i, h_result[i]);
-    }
-
-    // Free allocated memory
-    free(h_array);
-    free(h_result);
-    cudaFree(d_array);
-    cudaFree(d_result);
-
-    return 0;
-}
-*/
-
-
-
-/*
-// personal 1st code
-#include <stdio.h>
-#include <cuda.h>
-#include <curand.h>
-
-#define BLOCK_SIZE 32
-
-__global__ void columnSum(float* array, float* result, int x, int y) {
-    int tid = threadIdx.x;
-    int bid = blockIdx.x;
-    int index = bid * blockDim.x + tid;
-
-    if (index < x) {
-        float sum = 0;
-        for (int i = 0; i < y; ++i) {
-            sum += array[i * x + index];
-        }
-        result[index] = sum;
-    }
-}
-
-int main() {
-    int x = 128; // Number of columns
-    int y = 128; // Number of rows
-
-    float* h_array = (float*)malloc(x * y * sizeof(float));
-    float* h_result = (float*)malloc(x * sizeof(float));
-
-    // Initialize array with random values
-    for (int i = 0; i < x * y; ++i) {
-        h_array[i] = rand() / (float)RAND_MAX;
-    }
-
-    float* d_array;
-    float* d_result;
-
-    // Allocate device memory
-    cudaMalloc((void**)&d_array, x * y * sizeof(float));
-    cudaMalloc((void**)&d_result, x * sizeof(float));
-
-    // Copy array from host to device
-    cudaMemcpy(d_array, h_array, x * y * sizeof(float), cudaMemcpyHostToDevice);
-
-    // Define block and grid dimensions
-    dim3 blockDim(BLOCK_SIZE);
-    dim3 gridDim((x + blockDim.x - 1) / blockDim.x);
-
-    // Launch kernel
-    columnSum<<<gridDim, blockDim>>>(d_array, d_result, x, y);
-
-    // Copy result from device to host
-    cudaMemcpy(h_result, d_result, x * sizeof(float), cudaMemcpyDeviceToHost);
-
-    // Print the result
-    for (int i = 0; i < x; ++i) {
-        printf("Column %d: Sum = %f\n", i, h_result[i]);
-    }
-
-    // Free allocated memory
-    free(h_array);
-    free(h_result);
-    cudaFree(d_array);
-    cudaFree(d_result);
-
-    return 0;
-}
-*/
