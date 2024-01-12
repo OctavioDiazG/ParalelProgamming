@@ -39,7 +39,7 @@ Overall, the CUDA C program structure facilitates the utilization of data parall
 
 ## Detailed Breakdown
 
-**Data Parallelism:** 
+### **Data Parallelism:** 
 Task parallelism and data parallelism are two types of parallelism used in parallel programming. Task parallelism involves decomposing an application into independent tasks that can be executed concurrently. For example, a simple application may have tasks like vector addition and matrix-vector multiplication. Data parallelism, on the other hand, involves dividing a large data set into smaller chunks and processing them in parallel. It is the main source of scalability for parallel programs, as it allows for the utilization of massively parallel processors. While data parallelism is more commonly used, task parallelism can also be important in achieving performance goals, especially in large applications with a larger number.
 
 In an RGB representation, each pixel in an image is stored as a tuple of (r, g, b) values. The values of r, g, and b represent the intensity of the red, green, and blue light sources when the pixel is rendered. The intensity values range from 0 (dark) to 1 (full intensity). The format of an image's row is (r g b) (r g b) (r g b), with each tuple specifying a mixture of red, green, and blue. The actual combinations of these colors can vary depending on the color space being used. In the AdobeRGB color space, the valid combinations are shown as the interior of a triangle, with the mixture coefficients (x, y, 1 - y - x) indicating the fraction of pixel intensity assigned to each color.
@@ -54,7 +54,7 @@ Data Parallelism
 
 The color-to-greyscale conversion process exhibits a rich amount of data parallelism. Each pixel's computation can be performed independently of others, allowing for parallel execution. This parallelism can significantly speed up the overall conversion process. However, it's important to note that data parallelism in complete applications can be more complex, and this book focuses on teaching the necessary "parallel thinking" to identify and exploit data parallelism effectively.
 
-**CUDA C Program Structure:**
+### **CUDA C Program Structure:**
 once device functions and data declarations are added to a source file, it cannot be compiled by a traditional C compiler. Instead, it needs to be compiled by a CUDA C compiler called NVCC. The NVCC compiler processes the CUDA C program by using CUDA keywords to separate the host code (ANSI C code) and the device code. The host code is compiled with the host's standard C/C++ compilers and runs as a traditional CPU process. The device code, marked with CUDA keywords, is compiled by the NVCC runtime component and executed on a GPU device. In some cases, if there is no hardware device available or a kernel can be appropriately executed on a CPU, the kernel can also be executed on a CPU using tools like MCUDA. The execution of a CUDA program starts with the host code and when a kernel function is called, it is executed by multiple threads on a device. These threads are collectively called a grid and are the primary vehicle of parallel execution in a CUDA platform. After the kernel execution, the grid terminates and the execution continues on the host until another kernel is launched. It is important to note that the given figure (Fig. 2.4) shows a simplified model where the CPU and GPU execution do not overlap, but in reality, many heterogeneous computing applications manage overlapped CPU and GPU execution to take advantage of both CPUs and GPUs.
 
 Explanation in short paragraphs:
@@ -84,8 +84,7 @@ CUDA programmers can assume that these threads take very few clock cycles to gen
 
 This is in contrast with traditional CPU threads that typically take thousands of clock cycles to generate and schedule. This means that in comparison to traditional CPU threads, which can take a long time to generate and schedule, the CUDA threads are much more efficient in terms of time required for these operations.
 
-**A Vector Addition Kernel:**
-
+### **A Vector Addition Kernel:**
 Vector addition is considered the simplest form of data parallel computation, similar to the "Hello World" program in sequential programming. The text also mentions that the host code, which is the traditional C program, consists of a main function and a vector addition function. In the examples provided, variables processed by the host are prefixed with "h_" to distinguish them from variables processed by the device. The vecAdd function uses a for-loop to iterate through the vector elements, where each iteration calculates the sum of corresponding elements from two input vectors and stores the result in the output vector. The length of the vectors is controlled by the vector length parameter, and the function uses pass-by-reference to read the input elements and write.
 
 The given text explains the structure and functionality of a modified
@@ -108,38 +107,75 @@ In summary, the modified
 ```vecAdd```
 function allows for parallel execution of vector addition by allocating device memory, transferring data between host and device memory, and performing the vector addition calculation on the device.
 
+The revised vecAdd function acts as an outsourcing agent that handles the data transfer, calculation, and result collection on a device. It allows the main program to remain unaware that the vector addition is being performed on a device. However, this transparent outsourcing model can be inefficient due to the frequent copying of data between the host and device. In practice, it is often more efficient to keep important bulk data structures on the device and invoke device functions from the host code. The document mentions that the details of the revised function and the composition of the kernel function will be explained later in the chapter.
+
+### **Device Global Memory and Data Transfer:**
+Device global memory refers to the dynamic random access memory (DRAM) that is present on the hardware cards used in CUDA systems, such as the NVIDIA GTX1080. This global memory is also known as device memory. It is used to store data that is required for executing kernels on the device.
+
+To execute a kernel on a device, the programmer needs to allocate global memory on the device and transfer relevant data from the host memory to the allocated device memory. This is done using CUDA API functions. After the device execution, the programmer needs to transfer the result data from the device memory back to the host memory and free up the device memory that is no longer needed.
+
+The CUDA run-time system provides API functions like cudaMalloc and cudaFree for allocating and freeing device global memory. The cudaMalloc function is used to allocate memory on the device, and the cudaFree function is used to free the allocated memory. The programmer needs to pass the address of a pointer variable to cudaMalloc, which will be set to point to the allocated memory object. The size of the data to be allocated is specified in number of bytes.
+
+Data transfer between the host memory and the device memory is done using the cudaMemcpy function. This function is used to copy data from the host memory to the device memory (cudaMemcpyHostToDevice) and from the device memory to the host memory (cudaMemcpyDeviceToHost). The function takes parameters like the source pointer, destination pointer, number of bytes to be copied, and the type/direction of transfer.
+
+It is important to note that the cudaMemcpy function currently cannot be used to copy data between different GPUs in multi-GPU systems.
+
+In summary, device global memory is the memory on the device used to store data required for executing kernels. Data transfer between the host memory and the device memory is done using the cudaMemcpy function, and memory allocation and freeing on the device are done using the cudaMalloc and cudaFree functions
+
+### **Kernel Functions and Threading:**
+- Kernel Functions: <br>
+In CUDA, a kernel function specifies the code to be executed by all threads during a parallel phase. <br>
+All threads execute the same code in a kernel function. <br>
+Kernel functions are declared using the "global" keyword and are executed on the device. <br>
+They can only be called from the host code, except in CUDA systems that support dynamic parallelism. <br>
+Kernel functions are used to initiate parallel execution by launching them. <br>
+They exploit data parallelism by creating many threads to process different parts of the data in parallel. <br>
+
+- Threading: <br>
+When a kernel is launched, the CUDA run-time system generates a grid of threads organized into a two-level hierarchy. <br>
+Each grid is organized as an array of thread blocks, also known as blocks. <br>
+All blocks in a grid are of the same size and can contain up to 1024 threads. <br>
+The number of threads in a block is specified by the host code and can vary for different parts of the host code. <br>
+Threads are organized into a one-, two-, or three-dimensional array based on the dimensionality of the data being processed. <br>
+The built-in variable "blockDim" helps in organizing threads into a one-, two-, or three-dimensional array. <br>
+The choice of dimensionality for organizing threads usually reflects the dimensionality of the data being processed. <br>
+
+- Summary: Kernel functions in CUDA specify the code to be executed by all threads during parallel execution. Threads are organized into blocks, which are part of a grid. The number of threads in a block and the organization of threads reflect the dimensionality of the data being processed. Kernel functions are executed on the device and can only be called from the host code. They exploit data parallelism by creating many threads to process different parts of the data in parallel.
+
+### **Kernel Launch:** 
+When a CUDA program initiates parallel execution, it does so by launching kernel functions. The CUDA run-time system generates a grid of threads that are organized into a two-level hierarchy. Each grid is organized as an array of thread blocks, also known as blocks. All blocks within a grid are of the same size and can contain up to 1024 threads.
+
+The number of threads in each block is specified by the host code when a kernel is launched. The choice of dimensionality for organizing threads usually reflects the dimensionality of the data being processed. For example, if the data is one-dimensional, the threads can be organized into a one-dimensional array. The total number of threads in each block is specified by the ```blockDim.x``` variable.
+
+The grid of threads is created to process data in parallel, and the organization of the threads reflects the organization of the data. The threads within a block can be executed in any arbitrary order, and programmers should not make any assumptions regarding the execution order. The number of thread blocks used depends on the length of the vectors being processed.
+
+The execution of each thread within a block is sequential, and a CUDA program can launch the same kernel with different numbers of threads at different parts of the host code. The scalability of CUDA kernels in terms of execution speed depends on the hardware, with smaller GPUs executing fewer blocks in parallel and larger GPUs executing more blocks in parallel.
+
+Overall, the kernel launch in CUDA allows for the generation of a grid of threads that process different parts of the data in parallel, providing efficient hardware support for parallel execution.
+
 ## Reflexion
-### Chapter 3: CUDA Execution Model
 
-In Chapter 3, the focus is on developing kernels with a profile-driven approach and understanding the nature of warp execution. It explains how to expose more parallelism to the GPU and master grid and block configuration heuristics. The chapter also covers various CUDA performance metrics and events, as well as dynamic parallelism and nested execution.
+### 2.1 Data Parallelism
+Data parallelism is a concept used in parallel programming to process large amounts of data by breaking it down into smaller independent computations that can be executed in parallel. It is particularly useful for applications that deal with images, videos, simulations, and other data-intensive tasks.
 
-The chapter provides guidelines for selecting grid and block configurations, helping to optimize kernel performance. It emphasizes the importance of understanding hardware resources and the GPU architecture to write better code and fully exploit the device's capability. The chapter also delves into the concept of warp execution and how threads are grouped into warps.
+### 2.2 CUDA C Program Structure
+A CUDA C program consists of both host (CPU) and device (GPU) code. The program structure reflects the coexistence of these two components. By default, a CUDA program contains only host code, but device functions and data declarations can be added to enable data parallelism. Special CUDA C keywords are used to mark these device-specific elements.
 
-### Chapter 4: Global Memory
+### 2.3 A Vector Addition Kernel
+A vector addition kernel is a function in CUDA C that performs element-wise addition of two vectors. It is a simple example that demonstrates the use of CUDA C for data parallelism. The kernel function is executed by multiple threads in parallel, with each thread responsible for adding one element of the vectors.
 
-Chapter 4 focuses on the CUDA memory model and programming with global memory. It explores global memory access patterns and the impact of memory efficiency on kernel performance. The chapter provides guidelines for improving bandwidth utilization and maximizing the utilization of bytes traveling between global memory and on-chip memory.
+### 2.4 Device Global Memory and Data Transfer
+Device global memory is a type of memory in CUDA that is accessible by both the host and device. It is used to store data that needs to be shared between the host and device. Data transfer between the host and device is done using functions like cudaMalloc() and cudaMemcpy(), which allocate memory on the device and transfer data between the host and device, respectively.
 
-The chapter discusses the importance of aligned and coalesced memory accesses and provides techniques for achieving them. It also introduces Unified Memory, which simplifies CUDA programming by eliminating duplicate pointers and the need for explicit data transfer between the host and device.
+### 2.5 Kernel Functions and Threading
+In CUDA, a kernel function is a function that is executed by all threads in parallel. All threads execute the same code, but each thread can access its own unique thread index using built-in variables like threadIdx.x. These variables allow threads to distinguish themselves and determine the data they need to work on. Kernel functions are launched with a specified number of thread blocks and threads per block, which determines the total number of threads executing the kernel.
 
-### Opinion and Conclusion
+### 2.6 Kernel Launch
+Kernel launch is the process of starting the execution of a kernel function on the GPU. It involves specifying the number of thread blocks and threads per block, as well as any additional arguments required by the kernel function. The CUDA runtime system manages the distribution of threads across the GPU's multiprocessors for parallel execution.
 
-In my opinion, Chapters 3 and 4 provide valuable insights into optimizing CUDA kernel performance. 
+### 2.7 Summary
+This chapter introduces the core concepts of CUDA C and its extensions for writing parallel programs. It covers data parallelism, CUDA C program structure, vector addition kernel, device global memory, data transfer, kernel functions, and kernel launch. The chapter emphasizes the importance of understanding these concepts for efficient parallel programming and provides references for further details.
 
-Chapter 3 highlights the importance of understanding the hardware perspective and provides guidelines for selecting grid and block configurations. It also sheds light on the nature of warp execution and how it impacts kernel design.
+### 2.8 Exercises 
+The chapter concludes with exercises that test the understanding of the concepts covered. These exercises include questions about mapping thread/block indices to data indices, understanding data parallelism in image processing, and writing CUDA C code for vector addition. The exercises encourage readers to apply the concepts learned and explore more advanced features of CUDA C.
 
-Chapter 4 delves into the intricacies of global memory and its impact on kernel performance. It emphasizes the importance of memory efficiency, aligned and coalesced memory accesses, and maximizing bandwidth utilization. The introduction of Unified Memory simplifies programming and eliminates the need for explicit data transfer.
-
-Parallelism and Performance: The execution model allows threads to be executed in warps, maximizing parallelism and performance. This SIMT (Single Instruction, Multiple Threads) fashion enables efficient utilization of hardware resources, leading to faster execution of kernels.
-
-Hardware Perspective: The execution model exposes the hardware perspective, allowing developers to understand the underlying architecture and optimize their code accordingly. By considering hardware resources, cache characteristics, and memory access patterns, developers can write more efficient code and fully exploit the capabilities of the GPU.
-
-Profile-Driven Approach: CUDA programming encourages a profile-driven approach, where developers analyze the performance of their code using profiling tools like nvprof. This approach helps identify performance bottlenecks, understand kernel behavior, and guide optimization efforts, resulting in improved performance.
-
-Dynamic Parallelism: The introduction of dynamic parallelism in CUDA enables the creation of new work directly from the device. This feature allows for the expression of recursive or data-dependent parallel algorithms in a more natural and easy-to-understand way, enhancing code flexibility and maintainability.
-
-Overall, By understanding the CUDA execution model and global memory concepts, I can apply optimization techniques to improve performance in both code and real-life applications. Whether it's optimizing algorithms, improving data access patterns, or maximizing resource utilization, the knowledge gained from these chapters can be valuable in various domains where optimization is key.
-
-
-## References 
-
-[1] J. Cheng, M. Grossman, and T. McKercher, Professional Cuda C Programming. Indianapolis (Ind.): Wrox, 2014. 
