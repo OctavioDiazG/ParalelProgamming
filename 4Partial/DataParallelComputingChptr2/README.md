@@ -93,19 +93,19 @@ vecAdd
 function for executing vector addition in parallel.
 
 When the
-vecAdd
+```vecAdd```
 function returns, the subsequent statements in the main function can access the new contents of vector C.
 To execute vector addition in parallel, the
-vecAdd
+```vecAdd```
 function is modified and its calculations are moved to a device (GPU).
 The modified
-vecAdd
+```vecAdd```
 function, shown in Figure 2.6, includes three parts:
 Part 1: Allocates space in the device memory to hold copies of vectors A, B, and C, and copies the vectors from the host memory to the device memory.
 Part 2: Launches parallel execution of the actual vector addition kernel on the device.
 Part 3: Copies the sum vector C from the device memory back to the host memory and frees the vectors in the device memory.
 In summary, the modified
-vecAdd
+```vecAdd```
 function allows for parallel execution of vector addition by allocating device memory, transferring data between host and device memory, and performing the vector addition calculation on the device.
 
 ## Reflexion
